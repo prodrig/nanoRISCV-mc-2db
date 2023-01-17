@@ -1,5 +1,5 @@
 # nanoRISCV-mc-2db short description
-Simplified, unoptimized, multi-cycle RISC-V RV32I in SystemC + Qt using two internal data buses for educational purposes
+Simplified, unoptimized, multi-cycle RISC-V RV32I in SystemC + Qt using two internal data buses for educational purposes.
 
 # Intro
 The idea is to develop a graphical interactive simulation of a minimal computer system based on a RV32I CPU (single hart) with no additional extensions.
@@ -66,29 +66,62 @@ The complete list of control signals are:
   6. wRDAT. Write into the RDAT latch. This contains the value read from external memory.
   7. tRDATD1. Dump (through a tristate gate) the RDAT latch onto the internal D1 data bus.
 4. PC-related control signals:
-  1. JB (Jump-or-Branch). Signals the instruction may (potentially) change the value of the PC.
-  2. XZ (eXpected-Zero-flag). Expected value of the Z (zero) flag from the ALU for the branch to take the jump.
-  3. XN (eXpected-Negative-flag). Expected value of the N (negative) flag from the ALU for the branch to take the jump.
-  4. XF (eXpected-oVerflow-flag???).
+  1. JB (Jump-or-Branch). The instruction may (potentially) change the value of the PC, is a jump/call/branch/ret
+  2. XFV (eXpected-Flag-Value). The value of the selected ALU flag (using selFLAG) used to determine whether the jump is taken or not must match the value of this control signal for the jump to be taken.
+  3. selFLAG (2 bits). Selects the ALU flag to compare against XFV to decide if the jump is taken or not. 
+    1. selFLAG = 0. No ALU flags used (unconditional jump).
+    2. selFLAG = 1. The Z ALU flag is used (conditional branch BEQ/BNE). Jump taken if Z == XFV.
+    3. selFLAG = 2. The N ALU flag is used (conditional branch BLT/BGE). Jump taken if N == XFV.
+    4. selFLAG = 3. The C ALU flag is used (conditional branch BLTU/BGEU). Jump taken if C == XFV.
   5. iPC (increment PC). Increment the PC value.
-  6. tPCA. Dump (through a tristate gate) the PC register onto the internal address data bus.
-  6. tPCD1. Dump (through a tristate gate) the PC register onto the internal D1 data bus.
+  6. tPCA. Dump (through a tristate gate) the PC register (the instruction address) onto the internal address data bus.
+  7. tPCD1. Dump (through a tristate gate) the PC register (the base address for PC-relative jumps) onto the internal D1 data bus.
+5. RegisterBank-related control signals:
+  1. wRBANK. Write the value of the internal D1 data bus into the rd register of the register bank.
+  2. tRS1D1. Dump (through a tristate gate) the value of the rs1 register of the register bank onto the internal D1 data bus.
+  3. tRS2D2. Dump (through a tristate gate) the value of the rs2 register of the register bank onto the internal D2 data bus.
+6. ALU-related control signals:
+  1. selopALU (4 bits). Selection of the operation to be performed by the ALU. See the ALU section for details.
+  2. wALU. Write the ALU result into the ACC (accumulator) register and also update the stored ALU flags.
+  3. tALUA. Dump (through a tristate gate) the value of the ALU result (before the ACC register) onto the internal A address bus.
+  4. tALUD1. Dump (through a tristate gate) the value of the ACC register onto the internal D1 data bus.
+6. IR-related control signals:
+  1. wIR. Write the instruction bits into the Instruction Register (IR).
+  2. selIMM (3 bits). Selection of the immediate value from the I, S, U, B, and J immediates coming from the different instructions format.
+  3. tIMMD2. Dump (through a tristate gate) the value of the selected immediate value onto the internal D2 data bus.
   
 ## Design decisions
-Several questionable design decisions have been made, some of them to add clarity to the design, some others simply to add a variety of elements in the design (which is important so the user/student can analyze different kinds of elements):
+Several questionable design decisions have been made, some of them to add clarity to the design, some others simply to add a variety of elements in the design (which is important so the user/student can analyze different kinds of elements), simplify the overall block diagram or educational purposes:
 - Two data buses internal to the CPU have been used, one for each operand inputs of the ALU, called "internal data bus 1" (D1) and "internal data bus 2" (D2).
 - A MUX + tristate have been used to dump the immediate value (I, S, U, B, or J) to D2 and a separate tristate (with a separate control signal) to dump the value of the second read port of the register bank (RB2) to the same D2 bus. The first MUX has 5 entries (3 selection bits), so integrating RB2 as a 6th one would reduce the number of control signals (the tRB2D2 control signal).
 - Four separate tristate gates (with their corresponding control signals) have been used to dump the value of PC, RB1, RDAT, and ALU onto the D1 data bus. Using a 4-to-1 MUX would require only two selection bits, eliminating 2 control signals.
 - Two separate tristate gates (with their corresponding control signals) have been used to dump the value of PC and ALU onto the internal address bus. Using a 2-to-1 MUX would require only one selection bit, eliminating 1 control signal.
 - The storage elements that connect the CPU with the external memory are built using transparent latches, all the other storage elements of the CPU are edge-triggered registers. Although this reduces the number of clock cycles required to perform some operations, the rationale behind this decision is just to add variety to the CPU internal storage elements.
-- A special op1 + op2 - 4 operation is implemented in the ALU to calculate PC-relative jump targets. This allows increasing the current PC value at the end of the fetch phase (so it can be performed bindly irrespective of the instruction to be executed) and, at the same time, eliminates the need of a secondary buffer to store the PC of the current instruction to perform the PC-relative target address calculation. 
+- The PC register exhibits two outputs: instruction address and base. The instruction address output is the memory address used for the fetch phase to retrieve the instruction bits and the base output is the value used for PC-relative address calculations in the ALU. The address of the current instruction is the instruction address at the beginning of the execution until the PC is incremented, then it moves to the base output; ie. the instruction address is the address of the current instruction up to the clock cycle the iPC control signal is asserted and the address of the immediately following instruction after that; on the other hand the base output is the address of the previous executed instruction before and up iPC and the address of the current one after that point. The rationale behind this is to assert iPC blindly during the fetch phase for all instructions, even jump/branch instructions that use PC-relative (relative to the PC of the jump/branch instruction itself) calculations to determine the target instruction address.
+- The external memory interface uses a 32-bit bidirectional DQ data bus, a 30-bit ADDR bus plus 4-bit BE (byte enables) to indicate word address and bytes inside the word that are related to the memory operation, and separate RD and WR signals. Taking into account the presence
+of the BE signals (that are 0 when no memory operation is ongoing), a single WR signal would suffice to signal a write operation (WR = 1) or a read one (WR = 0); this was finally discarded to improve the clarity of the memory interface.
 
 ## Memory map
 The system has a simple memory map:
-- 0x00000000 to 0x00007FFF: Instruction + data memory
-- 0x00008000 to 0x7FFFFFFF: Unpopulated
-- 0x80000000 to 0x80007FFF: Peripherals. TBD.
-- 0x80008000 to 0xFFFFFFFF: Unpopulated
+- 0x00000000 to 0x0003FFFF: Instruction + data memory (256KB total, 64K positions x 32-bit words memory block)
+  In binary ...
+  as 32-bit addresses:
+  3322 2222 2222 11   11 1111 1100 0000 00   00
+  1098 7654 3210 98   76 5432 1098 7654 32   10
+  as 30-bit addresses
+  2222 2222 2211 11   11 1111 0000 0000 00
+  9876 5432 1098 76   54 3210 9876 5432 10
+  0000 0000 0000 00 - 00 0000 0000 0000 00 - 00 to
+  0000 0000 0000 00 - 11 1111 1111 1111 11 - 11
+- 0x00040000 to 0x7FFFFFFF: Unpopulated
+- 0x80000000 to 0x80003FFF: Peripherals, 16KB total, 4K positions x 32-bit words  TBD.
+  In binary ...
+  as 30-bit addresses
+  2222 2222 2211 1111 11   11 0000 0000 00
+  9876 5432 1098 7654 32   10 9876 5432 10
+  1000 0000 0000 0000 00 - 00 0000 0000 00 - 00 to
+  1000 0000 0000 0000 00 - 11 1111 1111 11 - 11
+- 0x80004000 to 0xFFFFFFFF: Unpopulated
 
 ## CPU structure
 

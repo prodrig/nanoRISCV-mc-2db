@@ -120,7 +120,7 @@ with the components:
 3. xxx
  
 
-[imgCpu]: (doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure"
+[imgCpu]: (doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure")
 
 ### Memory interface
 

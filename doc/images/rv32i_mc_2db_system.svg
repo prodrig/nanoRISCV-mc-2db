@@ -95,10 +95,10 @@
      inkscape:window-width="1368"
      showgrid="true"
      inkscape:document-rotation="0"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g34382-1"
      inkscape:document-units="mm"
-     inkscape:cy="90.75"
-     inkscape:cx="195.375"
+     inkscape:cy="246.5"
+     inkscape:cx="349.875"
      inkscape:zoom="4"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0.0"
@@ -5468,12 +5468,12 @@
              xml:space="preserve"
              style="font-size:2.82222px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
              x="166.7533"
-             y="47.49271"
+             y="50.336983"
              id="text170663"><tspan
                sodipodi:role="line"
                id="tspan170661"
                x="166.7533"
-               y="47.49271"
+               y="50.336983"
                style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222px;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583">[29:12]</tspan></text>
           <text
              xml:space="preserve"
@@ -5499,6 +5499,15 @@
       <g
          id="g168120"
          transform="translate(0,37.04167)">
+        <rect
+           style="fill:#ffffff;fill-rule:evenodd;stroke:#000000;stroke-width:0.352778;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.705558, 0.705558;stroke-dashoffset:0;paint-order:markers fill stroke"
+           id="rect8657"
+           width="111.125"
+           height="27.781244"
+           x="101.86459"
+           y="-120.38542"
+           ry="1.0685035"
+           rx="2.5545826" />
         <g
            id="g151796"
            transform="translate(61.854031,-23.151041)">
@@ -5580,23 +5589,14 @@
                y="-81.491676"
                style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Courier New';-inkscape-font-specification:'Courier New';text-align:end;text-anchor:end;stroke-width:0.264583">0      1</tspan></text>
         </g>
-        <rect
-           style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.352778;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.705558, 0.705558;stroke-dashoffset:0;paint-order:markers fill stroke"
-           id="rect8657"
-           width="111.12498"
-           height="27.781244"
-           x="101.86459"
-           y="-120.38542"
-           ry="1.0685035"
-           rx="2.5545826" />
         <text
            id="text33558"
-           y="-99.21875"
+           y="-96.572929"
            x="103.58956"
            style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
            xml:space="preserve"><tspan
              style="text-align:start;text-anchor:start;stroke-width:0.264583"
-             y="-99.21875"
+             y="-96.572929"
              x="103.58956"
              id="tspan33556"
              sodipodi:role="line">ADDR</tspan></text>
@@ -5613,22 +5613,22 @@
              id="tspan124450">Address decoder</tspan></text>
         <path
            style="fill:none;stroke:#000000;stroke-width:0.176389;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-           d="m 97.895833,-101.86459 -1.32292,2.645832"
+           d="m 97.895833,-99.218772 -1.32292,2.645832"
            id="path26561" />
         <text
            xml:space="preserve"
            style="font-size:2.82222px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;stroke-width:0.264583"
            x="97.23127"
-           y="-102.12917"
+           y="-99.483353"
            id="text26565"><tspan
              sodipodi:role="line"
              id="tspan26563"
              x="97.23127"
-             y="-102.12917"
+             y="-99.483353"
              style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222px;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;stroke-width:0.264583">18</tspan></text>
         <path
            id="path26569"
-           d="M 101.86458,-100.54167 H 55.5625"
+           d="M 101.86458,-97.895852 H 55.5625"
            style="fill:none;stroke:#000000;stroke-width:1.05833;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            sodipodi:nodetypes="cc" />
         <text

@@ -104,43 +104,31 @@ of the BE signals (that are 0 when no memory operation is ongoing), a single WR 
 ## Memory map
 The system has a simple memory map:
 - 0x00000000 to 0x0003FFFF: Instruction + data memory (256KB total, 64K positions x 32-bit words memory block)
-  In binary ...
-  as 32-bit addresses:
-  3322 2222 2222 11   11 1111 1100 0000 00   00
-  1098 7654 3210 98   76 5432 1098 7654 32   10
-  as 30-bit addresses
-  2222 2222 2211 11   11 1111 0000 0000 00
-  9876 5432 1098 76   54 3210 9876 5432 10
-  0000 0000 0000 00 - 00 0000 0000 0000 00 - 00 to
-  0000 0000 0000 00 - 11 1111 1111 1111 11 - 11
 - 0x00040000 to 0x7FFFFFFF: Unpopulated
 - 0x80000000 to 0x80003FFF: Peripherals, 16KB total, 4K positions x 32-bit words  TBD.
-  In binary ...
-  as 30-bit addresses
-  2222 2222 2211 1111 11   11 0000 0000 00
-  9876 5432 1098 7654 32   10 9876 5432 10
-  1000 0000 0000 0000 00 - 00 0000 0000 00 - 00 to
-  1000 0000 0000 0000 00 - 11 1111 1111 11 - 11
 - 0x80004000 to 0xFFFFFFFF: Unpopulated
 
 ## CPU structure
 
 The CPU structure is depicted below
 
-![alt text][imgCpu]
+![CPU hardware structure][imgCpu]
 
 with the components:
-1. 
+1. xxx
+2. xxx
+3. xxx
+ 
 
-[imgCpu]: (./doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure"
+[imgCpu]: (doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure"
 
 ### Memory interface
 
-[imgMemiface]: (./doc/images/rv32i_mc_2db_cpu_memiface.svg) "Memory interface hardware structure"
+![imgMemiface]: (doc/images/rv32i_mc_2db_cpu_memiface.svg) "Memory interface hardware structure"
 
 ### Control Unit structure
 
-[imgControlunit]: (./doc/images/rv32i_mc_2db_cpu_cu.svg) "Control unit hardware structure"
+![imgControlunit]: (doc/images/rv32i_mc_2db_cpu_cu.svg) "Control unit hardware structure"
 
 # Software development
 Software development for this system is based on the use of a standard RV32I assembler that generates an intel-hex file from the final executable.

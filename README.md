@@ -112,7 +112,7 @@ The system has a simple memory map:
 
 The CPU structure is depicted below
 
-![CPU hardware structure](doc/images/rv32i_mc_2db_cpu.svg)
+![CPU hardware structure][imgCpu]
 
 with the components:
 1. xxx
@@ -120,15 +120,15 @@ with the components:
 3. xxx
  
 
-[imgCpu]: (doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure"
+[imgCpu]: (doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure")
 
 ### Memory interface
 
-![Memory interface hardware structure](doc/images/rv32i_mc_2db_cpu_memiface.svg)
+![imgMemiface]: (doc/images/rv32i_mc_2db_cpu_memiface.svg) "Memory interface hardware structure"
 
 ### Control Unit structure
 
-![Control unit hardware structure](doc/images/rv32i_mc_2db_cpu_cu.svg)
+![imgControlunit]: (doc/images/rv32i_mc_2db_cpu_cu.svg) "Control unit hardware structure"
 
 # Software development
 Software development for this system is based on the use of a standard RV32I assembler that generates an intel-hex file from the final executable.

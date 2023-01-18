@@ -53,42 +53,42 @@ All control signals are high-level active and active for an integral number of c
 Those signals enabling the write into edge-triggered storage elements (registers, register bank) are actually write enables (WE) signals synchronous to the clock, and the write is actually performed at the end of the clock cycle, at the negative edge of the clock.
 
 The complete list of control signals are:
-1. Control signals internal to the Control Unit:
-  1. EOF (End-Of-Fetch). It signals the last clock cycle of the fetch phase, when the IR is written with the instruction bits.
-  2. EOI (End-Of-Instruction). This control signal is internal to the Control Unit. It signals the last clock cycle of the execution of the current instruction.
-2. FETCHing. Signals that the fetch phase is ongoing. It is asserted in the first clock cycle of the execution of any instruction and it remains asserted until the last clock cycle of the fetch phase, when the IR (Instruction Register) is written with the instruction bits.
-3. Memory-related control signals:
-  1. wrMEM. Write into external memory.
-  2. rdMEM. Read from external memory.
-  3. wADDR. Write into the ADDR latch. This contains the external memory address.
-  4. wWDAT. Write into the WDAT latch. This contains the value to be written into external memory.
-  5. tWDATDQ. Dump (through a tristate gate) the WDAT latch onto the external DQ data bus.
-  6. wRDAT. Write into the RDAT latch. This contains the value read from external memory.
-  7. tRDATD1. Dump (through a tristate gate) the RDAT latch onto the internal D1 data bus.
-4. PC-related control signals:
-  1. JB (Jump-or-Branch). The instruction may (potentially) change the value of the PC, is a jump/call/branch/ret
+1. Memory-related control signals:
+  1. fetch. Signals that the fetch phase is ongoing. It is asserted in the first clock cycle of the execution of any instruction and it remains asserted until the last clock cycle of the fetch phase, when the IR (Instruction Register) is written with the instruction bits.
+  2. wrMEM. Write into external memory.
+  3. rdMEM. Read from external memory.
+  4. wADDR. Write into the ADDR latch. This contains the external memory address.
+  5. wWDAT. Write into the WDAT latch. This contains the value to be written into external memory.
+  6. tWDATDQ. Dump (through a tristate gate) the WDAT latch onto the external DQ data bus.
+  7. wRDAT. Write into the RDAT latch. This contains the value read from external memory.
+  8. tRDATD1. Dump (through a tristate gate) the RDAT latch onto the internal D1 data bus.
+2. PC-related control signals:
+  1. wTAKEJ. Write the TAKEJ ("take jump") flag. The TAKEJ flag determines if a jump must be taken and it is cleared at the fetch phase of every instruction. This is 1 for jump/call but may be 0 or 1 for brnaches, depending whether the selected flag (selFLAG) value equals the expected value (XFV) or not. For branch instructions the wTAKEJ control signal must be asserted in the clock cycle the ALU is performing the comparison (to use the flags that result from the comparison) and before the wPC signal is asserted; for unconditional jumps (selFLAG = 0) this signal may be asserted in any clock cycle prior to the assertion of wPC.
   2. XFV (eXpected-Flag-Value). The value of the selected ALU flag (using selFLAG) used to determine whether the jump is taken or not must match the value of this control signal for the jump to be taken.
   3. selFLAG (2 bits). Selects the ALU flag to compare against XFV to decide if the jump is taken or not. 
     1. selFLAG = 0. No ALU flags used (unconditional jump).
     2. selFLAG = 1. The Z ALU flag is used (conditional branch BEQ/BNE). Jump taken if Z == XFV.
     3. selFLAG = 2. The N ALU flag is used (conditional branch BLT/BGE). Jump taken if N == XFV.
     4. selFLAG = 3. The C ALU flag is used (conditional branch BLTU/BGEU). Jump taken if C == XFV.
-  5. iPC (increment PC). Increment the PC value.
+  4. iPC (increment PC). Increment the PC value.
+  5. wPC (write PC). Write the jump target address into the PC register (only of the TAKEJ allows the operation).
   6. tPCA. Dump (through a tristate gate) the PC register (the instruction address) onto the internal address data bus.
   7. tPCD1. Dump (through a tristate gate) the PC register (the base address for PC-relative jumps) onto the internal D1 data bus.
-5. RegisterBank-related control signals:
+3. RegisterBank-related control signals:
   1. wRBANK. Write the value of the internal D1 data bus into the rd register of the register bank.
   2. tRS1D1. Dump (through a tristate gate) the value of the rs1 register of the register bank onto the internal D1 data bus.
   3. tRS2D2. Dump (through a tristate gate) the value of the rs2 register of the register bank onto the internal D2 data bus.
-6. ALU-related control signals:
+4. ALU-related control signals:
   1. selopALU (4 bits). Selection of the operation to be performed by the ALU. See the ALU section for details.
   2. wALU. Write the ALU result into the ACC (accumulator) register and also update the stored ALU flags.
   3. tALUA. Dump (through a tristate gate) the value of the ALU result (before the ACC register) onto the internal A address bus.
   4. tALUD1. Dump (through a tristate gate) the value of the ACC register onto the internal D1 data bus.
-6. IR-related control signals:
+5. IR-related control signals:
   1. wIR. Write the instruction bits into the Instruction Register (IR).
   2. selIMM (3 bits). Selection of the immediate value from the I, S, U, B, and J immediates coming from the different instructions format.
   3. tIMMD2. Dump (through a tristate gate) the value of the selected immediate value onto the internal D2 data bus.
+6. Control signals internal to the Control Unit:
+  1. EOI (End-Of-Instruction). This control signal is internal to the Control Unit. It signals the last clock cycle of the execution of the current instruction.
   
 ## Design decisions
 Several questionable design decisions have been made, some of them to add clarity to the design, some others simply to add a variety of elements in the design (which is important so the user/student can analyze different kinds of elements), simplify the overall block diagram or educational purposes:
@@ -120,7 +120,7 @@ with the components:
 3. xxx
  
 
-[imgCpu]: (doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure"
+[imgCpu]: (doc/images/rv32i_mc_2db_cpu.svg) "CPU hardware structure")
 
 ### Memory interface
 

@@ -121,14 +121,18 @@ with the components:
 3. xxx
  
 
+### Program Counter (PC) structure
+
+![Program Counter (PC) structure](doc/images/rv32i_mc_2db_cpu_cu_pc.svg)
+
 
 ### Memory interface
 
-![Memory interface hardware structure]: (doc/images/rv32i_mc_2db_cpu_memiface.svg) 
+![Memory interface hardware structure](doc/images/rv32i_mc_2db_cpu_memiface.svg) 
 
 ### Control Unit structure
 
-![Control unit hardware structure]: (doc/images/rv32i_mc_2db_cpu_cu.svg)
+![Control unit hardware structure](doc/images/rv32i_mc_2db_cpu_cu.svg)
 
 # Software development
 Software development for this system is based on the use of a standard RV32I assembler that generates an intel-hex file from the final executable.

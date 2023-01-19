@@ -35,7 +35,118 @@ The timing of the different elements is as follows:
    1. For read operations, during this two clock cycles the inputs to the external memory (address, rd, wr, and be) must be stable.
    1. For read operations, during the last part ff the second clock cycle the external memory dumps the read value onto the dq bus.
 
-## List of control signals
+![Overall system structure](doc/images/rv32i_mc_2db_cpu_pc.svg)
+
+The image above shows the overall system structure that contains:
+- A RISC-V RV32I CPU (bottom).
+- A memory address decoder (center). A very simple memory decoding is used.
+- A 64K x 32 memory containing instructions and data (right-center). The behavior of this memory block mimics a standard SRAM memory. Its contents are initialized with the executable in intel-hex format.
+- A 16K x 32 peripheral I/O area (right-top). The project currently doesn't include any peripherals.
+
+### Memory map
+The system has a simple memory map:
+- 0x00000000 to 0x0003FFFF: Instruction + data memory (256KB total, 64K positions x 32-bit words memory block).
+- 0x00040000 to 0x7FFFFFFF: Unpopulated.
+- 0x80000000 to 0x80003FFF: Peripherals, 16KB total, 4K positions x 32-bit words  TBD.
+- 0x80004000 to 0xFFFFFFFF: Unpopulated.
+
+
+## CPU structure
+
+The CPU structure is depicted below
+
+![CPU hardware structure](doc/images/rv32i_mc_2db_cpu.svg)
+
+with the components:
+1. WADDR. A 32-bit transparent latch that holds the address used in transactions with the external memory.
+1. WDAT. A 32-bit transparent latch that holds the value to be written in a write operation with the external memory.
+1. RDAT. A 32-bit transparent latch that holds the value read from the external memory in a read operation.
+1. PC. Program Counter block. This component exports two outputs: the 32-bit PC value (called IADDR) to be used as the memory address for the instruction fetch and the base value (called BASE) to be used in the calculation of the target address in PC-relative jumps.
+1. RBANK. The CPU Register Bank or Register File. A set of 32 32-bits registers; register R0 resets to zero and can't be overwritten (any write attempt is silently discarded). Two read ports RS1 and RS2 allows reading two values simultaneously.
+1. ALU. The CPU 32-bit Arithmetic-Logic Unit. From the operands in the data buses and the operation selection the ALU performs a calculation and determines the value of the Z, N, and C flags.
+1. ACC. The 32-bit Accumulator register. Holds the result of the ALU.
+1. IR. The 32-bit Instruction Register. Holds the instruction bits fetched from the external memory.
+1. Immediate block. A combinational block that extracts any of the immediate values present in the IR and puts its value onto the data bus D2.
+1. The Control Unit (CU). This block generates all control signals to control the CPU datapath. It is composed of:
+   1. The main control unit block, where the majority of control signals are generated.
+   1. The memory interface. This is part of the Control Unit but exposed outside the CU block. A circuitry that generates external control signals for the memory transaction, and CPU-internal signals to support byte, half, and word aligned accesses.
+   1. The TAKEJ block. This is part of the Control Unit but exposed outside the CU block. A circuitry that determines if, as the result of a comparison performed in the ALU (with its corresponding flags), a jump has to be taken or not. In the end this information is stored into the TAKEJ flag; this single-bit flag will allow or deny, in a future clock cycle, loading the PC with the calculated target address.
+
+The execution of any instruction is divided into two distinct phases, each one requiring several clock cycles:
+- The initial fetch phase. Common to all instruction, the goal of this phase is to fetch (read) the instruction bits from the external memory. This phase ends when the IR is written.
+- The second execution phase. This is different for each instruction, and its goal is to finish the execution of the instruction. This comprises one or more of these steps: operands retrieval, ALU calculation, memory operation, and result write. This phase ends when the CU-internal control signal EOI (End-Of-Instruction) is asserted in which case the next clock cycle is the first one of the fetch phase of the next instruction.
+
+### Program Counter (PC) structure
+
+![Program Counter (PC) structure](doc/images/rv32i_mc_2db_cpu_pc.svg)
+
+Inputs:
+* D is the 32-bit target address when taking a jump during the execution of a jump/branch instruction.
+* LOAD is a 1-bit input that enables loading the D value into the ADDR register.
+* INC is a 1-bit input that enables writing PC+4 into the ADDR register and, at the same time, write PC into the BASE register.
+* RST is a 1-bit input that resets (clears) to zero both ADDR and BASE registers.
+Outputs:
+* IADDR is the 32-bit address for the instruction fetch. It corresponds to the address of the current instruction during the fetch phase, and the address of the immediately posterior one after the fetch phase.
+* BASE is the 32-bit address for PC-relative calculations. It corresponds to the address of the previously executed instruction during the fetch (irrelevant for the execution of the current one) and to the address of the current one after the fetch phase.
+
+### Memory interface
+
+The CPU memory interface is divided into three separate sections (see below)
+![Memory interface hardware structure](doc/images/rv32i_mc_2db_cpu_memiface.svg) 
+
+1. The circuitry used to generate the external memory interface signals RD, WR, and BE and the internal signals SHIFT, ZSE, and EXT used to align and zero/sign extend the values in read and write operations. This is shown on the left in the image above.
+   * Inputs:
+      * wrMEM. 1 bit. Signals a memory write operation. This signal must be asserted all the clock cycles the write operation is ongoing.
+      * rdMEM. 1 bit. Signals a memory read operation. This signal must be asserted all the clock cycles the read operation is ongoing.
+	  * FETCH. 1 bit. Used in combination with rdMEM. Signals the fetch phase during the execution of any instruction and helps the memory interface to determine if the read operation is a 32-bit aligned word read irrespective of F3 and A.
+	  * F3. 3-bits. The funct3 field of the RV32I instrucion.
+	  * A. 2-bit. The two LSB bits of the memory address.
+   * Outputs:
+      * WR. 1 bit. External memory write.
+      * RD. 1 bit. External memory read.
+	  * BE. 4 bits. Individual byte enables in the 32-bit external data bus.
+	  * SHIFT. 2 bits. Number of bytes to shift in the alignment process between the CPU and the external DQ bus.
+	  * ZSE. 1 bit. Zero/Sign Extend. Indicates whether the extension (if any) to 32-bits of the data read from external memory must be a zero-extension (ZSE = 0) or a sign-extension (ZSE = 1).
+	  * EXT. 2 bits. Size of the extension to be performed in a read operation: 0 = no extension (word access), 1 = 16-bit extension (half access), 2 = 24-bit extension (byte access).
+1. The WDAT alignment circuitry, that aligns the value to be written into memory to the BEs used in the transaction. This is shown on the center in the image above.
+   * Inputs:
+	  * SHIFT. 2 bits. Number of bytes to shift in the alignment process between the CPU and the external DQ bus.
+      * DIN. 32 bits. Data from CPU, to be written into external memory.
+   * Outputs:
+      * DOUT. 32 bits. Aligned data to be actually written into the external memory.
+1. The RDAT alignment and zero/sign extension circuitry. This first aligns the value coming from the external memory in a read operation and then zero/sign extend the resulting value to 32 bits if the operation is a byte or half read operation. This is shown on the right in the image above.
+   * Inputs:
+      * DIN. 32 bits. Data coming from the external memory in a read operation.
+	  * SHIFT. 2 bits. Number of bytes to shift in the alignment process between the CPU and the external DQ bus.
+	  * ZSE. 1 bit. Zero/Sign Extend. Indicates whether the extension (if any) to 32-bits of the data read from external memory must be a zero-extension (ZSE = 0) or a sign-extension (ZSE = 1).
+	  * EXT. 2 bits. Size of the extension to be performed in a read operation: 0 = no extension (word access), 1 = 16-bit extension (half access), 2 = 24-bit extension (byte access).
+   * Outputs:
+      * DOUT. 32 bits. Aligned data to be actually stored into the CPU.
+
+### Control Unit structure
+
+The Control Unit is built around a 256 x 32 ROM memory that contains the value of the datapath control signals for all clock cycles of all instructions. One position of the ROM table corresponds to one clock cycle in the instruction execution.
+
+Each ROM memory position is called a uINSTR (micro-instrucion), and the value used to address the ROM memory is called uADDR (micro-address).
+The ROM accepts an address value (the uADDR value) in one clock cycle and provides the contents at that address in the next clock cycle in the data output.
+
+ROM contents is divided into "sections" of 4 positions each, that corresponds to 4 clock cycles during the instruction execution.
+The first section, at address zero, is reserved for the fetch phase. At the end of the fecth phase the section used is determined by the INUM value, coming from the Instruction Number circuitry (InstrNum). We're assuming here that the fetch phase requires no more than four clock cycles and that there are no instruction that requires, after the fetch phase, more than four clock cycles to finish the execution. This can be easily changed, however, changing the INUM assigned to each instruction, as the execution finishes only when a position contains an asserted EOI bit.
+
+At the beginning of the fetch phase uADDR = 0; then it is increased in each clock cycle except that:
+1. If the wRI signal (one of the uINSTR bits coming from the ROM) is asserted then uADDR = INUM, the result of the Intruction Number block.
+1. If the EOI signal (one of the uINSTR bits coming from the ROM) is asserted then uADDR = 0, the result of the Intruction Number block.
+
+![Control unit hardware structure](doc/images/rv32i_mc_2db_cpu_cu.svg)
+
+Inputs:
+* INSTR is the 32-bit instruction being fetched (the D input of the IR, not its Q output).
+* RST is a 1-bit input that resets (clears) to zero the uADDR register.
+Outputs:
+* IADDR is the 32-bit address for the instruction fetch. It corresponds to the address of the current instruction during the fetch phase, and the address of the immediately posterior one after the fetch phase.
+* BASE is the 32-bit address for PC-relative calculations. It corresponds to the address of the previously executed instruction during the fetch (irrelevant for the execution of the current one) and to the address of the current one after the fetch phase.
+
+### List of control signals
 
 Control signals, in general, follow the nomenclature *op*ELEM or *op*FROMTO:
 - *op* is a prefix stating the operation performed by the control signal, always lowercase:
@@ -90,8 +201,9 @@ The complete list of control signals are:
    1. tIMMD2. Dump (through a tristate gate) the value of the selected immediate value onto the internal D2 data bus.
 1. Control signals internal to the Control Unit:
    1. EOI (End-Of-Instruction). This control signal is internal to the Control Unit. It signals the last clock cycle of the execution of the current instruction.
+
   
-## Design decisions
+### CPU design decisions
 Several questionable design decisions have been made, some of them to add clarity to the design, some others simply to add a variety of elements in the design (which is important so the user/student can analyze different kinds of elements), simplify the overall block diagram or educational purposes:
 - Two data buses internal to the CPU have been used, one for each operand inputs of the ALU, called "internal data bus 1" (D1) and "internal data bus 2" (D2).
 - A MUX + tristate have been used to dump the immediate value (I, S, U, B, or J) to D2 and a separate tristate (with a separate control signal) to dump the value of the second read port of the register bank (RB2) to the same D2 bus. The first MUX has 5 entries (3 selection bits), so integrating RB2 as a 6th one would reduce the number of control signals (the tRB2D2 control signal).
@@ -101,41 +213,11 @@ Several questionable design decisions have been made, some of them to add clarit
 - The PC register exhibits two outputs: instruction address and base. The instruction address output is the memory address used for the fetch phase to retrieve the instruction bits and the base output is the value used for PC-relative address calculations in the ALU. The address of the current instruction is the instruction address at the beginning of the execution until the PC is incremented, then it moves to the base output; ie. the instruction address is the address of the current instruction up to the clock cycle the iPC control signal is asserted and the address of the immediately following instruction after that; on the other hand the base output is the address of the previous executed instruction before and up iPC and the address of the current one after that point. The rationale behind this is to assert iPC blindly during the fetch phase for all instructions, even jump/branch instructions that use PC-relative (relative to the PC of the jump/branch instruction itself) calculations to determine the target instruction address.
 - The external memory interface uses a 32-bit bidirectional DQ data bus, a 30-bit ADDR bus plus 4-bit BE (byte enables) to indicate word address and bytes inside the word that are related to the memory operation, and separate RD and WR signals. Taking into account the presence
 of the BE signals (that are 0 when no memory operation is ongoing), a single WR signal would suffice to signal a write operation (WR = 1) or a read one (WR = 0); this was finally discarded to improve the clarity of the memory interface.
+- The execution of conditional branches could be reduced if the branch is not taken, simply by connecting the output value (inverted) of the CalcTAKEJ component as a third input to the 2-input OR logic gate in the Control Unit component that controls the MUX that provides uADDR to the ROM table. The effect of this connection would be that, if the calculated Take Jump bit = 0, its inverted value would force uADDR = 0 and that would abort the branch execution, starting the execution of instruction immediately following the branch in the next clock cycle. Another effect of this connection is that branch instructions would have two different execution times: a shorter one if the branch condition doesn't hold and the jump is not taken, and a larger one if the branch condition holds and the jump is taken. Even if this means the design becomes more efficient in terms of clock cycles, this "variable" execution time was considered an obstacle for the student understaning and so was discarded. 
 
-## Memory map
-The system has a simple memory map:
-- 0x00000000 to 0x0003FFFF: Instruction + data memory (256KB total, 64K positions x 32-bit words memory block)
-- 0x00040000 to 0x7FFFFFFF: Unpopulated
-- 0x80000000 to 0x80003FFF: Peripherals, 16KB total, 4K positions x 32-bit words  TBD.
-- 0x80004000 to 0xFFFFFFFF: Unpopulated
-
-## CPU structure
-
-The CPU structure is depicted below
-
-![CPU hardware structure](doc/images/rv32i_mc_2db_cpu.svg)
-
-with the components:
-1. xxx
-2. xxx
-3. xxx
- 
-
-### Program Counter (PC) structure
-
-![Program Counter (PC) structure](doc/images/rv32i_mc_2db_cpu_cu_pc.svg)
-
-
-### Memory interface
-
-![Memory interface hardware structure](doc/images/rv32i_mc_2db_cpu_memiface.svg) 
-
-### Control Unit structure
-
-![Control unit hardware structure](doc/images/rv32i_mc_2db_cpu_cu.svg)
 
 # Software development
-Software development for this system is based on the use of a standard RV32I assembler that generates an intel-hex file from the final executable.
-The intel-hex file is loaded by the Qt program to fill the system memory.
+Software development for this system is based on the use of a standard RV32I assembler that generates an intel-hex file from the final executable. This intel-hex file is loaded by the Qt program to fill the external memory before the simulation starts.
 
 # How to simulate
+I don't know yet :(

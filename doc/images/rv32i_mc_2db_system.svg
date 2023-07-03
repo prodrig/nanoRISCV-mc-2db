@@ -95,10 +95,10 @@
      inkscape:window-width="1368"
      showgrid="true"
      inkscape:document-rotation="0"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g28496"
      inkscape:document-units="mm"
-     inkscape:cy="605"
-     inkscape:cx="188.75"
+     inkscape:cy="682"
+     inkscape:cx="349.75"
      inkscape:zoom="2"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0.0"
@@ -1425,17 +1425,6 @@
              transform="rotate(-90)"
              rx="1.2940292e-05" />
           <text
-             xml:space="preserve"
-             style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
-             x="77.24073"
-             y="31.220856"
-             id="text66268"><tspan
-               sodipodi:role="line"
-               id="tspan66266"
-               x="77.24073"
-               y="31.220856"
-               style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Italic';text-align:end;text-anchor:end;stroke-width:0.264583">CLK</tspan></text>
-          <text
              id="text66284"
              y="37.967697"
              x="77.294472"
@@ -1481,26 +1470,6 @@
                x="102.17463"
                y="31.659065"
                style="text-align:end;text-anchor:end;stroke-width:0.264583">Q</tspan></text>
-          <text
-             xml:space="preserve"
-             style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
-             x="85.546181"
-             y="31.750015"
-             id="text79011"><tspan
-               sodipodi:role="line"
-               id="tspan79009"
-               x="85.546181"
-               y="31.750015"
-               style="text-align:start;text-anchor:start;stroke-width:0.264583">CLK</tspan></text>
-          <path
-             id="path79013"
-             d="m 82.020827,30.42709 h -3.96875"
-             style="fill:none;stroke:#000000;stroke-width:0.352779;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-          <path
-             sodipodi:nodetypes="ccc"
-             id="path79015"
-             d="m 82.020827,27.78125 2.64584,2.64583 -2.64584,2.64584"
-             style="fill:none;stroke:#000000;stroke-width:0.352778;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
           <path
              id="path79017"
              d="m 82.020827,37.04167 h -3.96875"
@@ -1515,7 +1484,7 @@
                id="tspan79025"
                x="83.164955"
                y="38.100006"
-               style="text-align:start;text-anchor:start;stroke-width:0.264583">WE</tspan></text>
+               style="text-align:start;text-anchor:start;stroke-width:0.264583">WRITE</tspan></text>
           <g
              id="g99071"
              transform="translate(-309.5625)">
@@ -1922,37 +1891,6 @@
                    x="317.24368"
                    id="tspan62278"
                    sodipodi:role="line">Q</tspan></text>
-              <text
-                 xml:space="preserve"
-                 style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
-                 x="295.522"
-                 y="31.220856"
-                 id="text62290"><tspan
-                   sodipodi:role="line"
-                   id="tspan62288"
-                   x="295.522"
-                   y="31.220856"
-                   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Italic';text-align:end;text-anchor:end;stroke-width:0.264583">CLK</tspan></text>
-              <text
-                 xml:space="preserve"
-                 style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
-                 x="303.82745"
-                 y="31.750015"
-                 id="text62294"><tspan
-                   sodipodi:role="line"
-                   id="tspan62292"
-                   x="303.82745"
-                   y="31.750015"
-                   style="text-align:start;text-anchor:start;stroke-width:0.264583">CLK</tspan></text>
-              <path
-                 id="path62296"
-                 d="m 300.30209,30.42709 h -3.96876"
-                 style="fill:none;stroke:#000000;stroke-width:0.352778;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-              <path
-                 sodipodi:nodetypes="ccc"
-                 id="path62298"
-                 d="m 300.30208,27.78125 2.64584,2.64583 -2.64584,2.64584"
-                 style="fill:none;stroke:#000000;stroke-width:0.352778;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
               <path
                  id="path62300"
                  d="m 300.30209,37.04167 h -3.96876"
@@ -1980,7 +1918,7 @@
                    id="tspan62308"
                    x="301.44623"
                    y="38.100006"
-                   style="text-align:start;text-anchor:start;stroke-width:0.264583">WE</tspan></text>
+                   style="text-align:start;text-anchor:start;stroke-width:0.264583">WRITE</tspan></text>
               <text
                  xml:space="preserve"
                  style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:end;text-anchor:end;stroke-width:0.264583"
@@ -2083,37 +2021,6 @@
                    x="247.69548"
                    y="31.659065"
                    style="text-align:end;text-anchor:end;stroke-width:0.264583">Q</tspan></text>
-              <text
-                 xml:space="preserve"
-                 style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
-                 x="222.69543"
-                 y="31.220856"
-                 id="text55342-0"><tspan
-                   sodipodi:role="line"
-                   id="tspan55340-3"
-                   x="222.69543"
-                   y="31.220856"
-                   style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Italic';text-align:end;text-anchor:end;stroke-width:0.264583">CLK</tspan></text>
-              <text
-                 xml:space="preserve"
-                 style="font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:start;text-anchor:start;stroke-width:0.264583"
-                 x="231.06703"
-                 y="31.750015"
-                 id="text55346-5"><tspan
-                   sodipodi:role="line"
-                   id="tspan55344-3"
-                   x="231.06703"
-                   y="31.750015"
-                   style="text-align:start;text-anchor:start;stroke-width:0.264583">CLK</tspan></text>
-              <path
-                 id="path55348-8"
-                 d="m 227.54166,30.42709 h -3.96875"
-                 style="fill:none;stroke:#000000;stroke-width:0.352779;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
-              <path
-                 sodipodi:nodetypes="ccc"
-                 id="path55360-8"
-                 d="m 227.54165,27.78125 2.64584,2.64583 -2.64584,2.64584"
-                 style="fill:none;stroke:#000000;stroke-width:0.352778;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
               <path
                  id="path935-5-6"
                  d="m 227.54166,37.04167 h -3.96875"
@@ -2141,7 +2048,7 @@
                    id="tspan931-7-7"
                    x="228.68579"
                    y="38.100006"
-                   style="text-align:start;text-anchor:start;stroke-width:0.264583">WE</tspan></text>
+                   style="text-align:start;text-anchor:start;stroke-width:0.264583">WRITE</tspan></text>
             </g>
             <path
                style="fill:none;stroke:#000000;stroke-width:1.41112;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"

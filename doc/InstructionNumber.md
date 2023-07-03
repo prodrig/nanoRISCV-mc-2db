@@ -14,59 +14,112 @@ Let's also assume that no instruction will require (after the fetch phase) more 
 INUM values will consecutive values multiple of KC. 
 
 Current value of KC = 4, so the ROM table is divided into 64 "sections", the first one devoted to the instruction fetch phase 
-and the rest to the execution of each instruction. To have all sections of equal length the maximum value for KC = 7 if no more than 
-2 custom instructions are supported, and max KC = 5 with the 11 custom instructions shown in the table below.
+and the rest to the execution of each instruction. To have all sections of equal length the maximum value for KC = 7 if only one 
+custom instructions is supported (only custom instrucion supported would be CUSTOM-0 with IORDER = 29, see table below, 36 sections total x KC = 252 < 256), 
+and max KC = 6 with the 4 custom instructions CUSTOM-0 to CUSTOM-3 shown in the table below (39 sections total x KC = 234 < 256).
 
-This is not a requirement, just a simplification; if required, an instruction with an INUM = n&times;KC may use up to 2&times;KC cycles 
-after the fetch phase simply by not assigning (k+1)&times;KC as the INUM of any other instruction. Not all sections would be of the same length then, but this is not a problem.
+Having all sections of the same size is not a requirement, just a simplification; if required, an instruction with an INUM = n&times;KC may use up more space,
+with the precaution of not assigning that space to the INUM of another instruction. Not all sections would be of the same length then, but this is not a problem.
+For example, all instructions implemented as NOP could share the same section to add more room to the rest of instructions, 
+and it would be also possible to assigned unused entries in one section to the section of the next instruction in the table below.
+All these are possibilities to reduce the ROM size or to have more room for expansion, with the minor nuissance that the starting
+position of each instruction would be more difficult to determine.
 
-| opcode_6_2 | funct3 | funct7_5 | funct12_0 |INUM&divide;K | Instruction/opcode | Comments |
-|:----------:|:------:|:--------:|:---------:|-------------:|:-------------------|:---------|
-| 00011 | 000 | x | x |    1 | FENCE          | Execute as a NOP 
-| 00000 | xxx | x | x |    2 | LOAD	          | All loads are a single instruction from CU's point of view. Differences in size, alignment, or zero/sign-extension for bytes and halfs are handled by the memory interface block. Size is funct3(1:0), unsigned = funct3(2).
-| 01000 | xxx | x | x | 0x0C | STORE          | All loads are a single instruction from CU's point of view. Differences in size, alignment, or zero/sign-extension for bytes and halfs are handled by the memory interface block. Size is funct3(1:0), unsigned = funct3(2) (same bits as from LOAD).
-| 00101 | xxx | x | x |    3 | AUIPC          | AUIPC 
-| 01101 | xxx | x | x |    4 | LUI            | LUI
-| 11001 | xxx | x | x |    5 | JALR           | JALR
-| 11011 | xxx | x | x |    6 | JAL            | JAL 
-| 11000 | 000 | x | x |    7 | BRANCH(BEQ)	  | ( a == b? branch : continue )
-| 11000 | 001 | x | x |    8 | BRANCH(BNE)	  | ( a != b? branch : continue )
-| 11000 | 100 | x | x |    9 | BRANCH(BLT)	  | ( a < b? branch : continue )
-| 11000 | 101 | x | x |   10 | BRANCH(BGE)	  | ( a >= b? branch : continue )
-| 11000 | 110 | x | x |   11 | BRANCH(BLTU)	  | ( (unsigned)a < (unsigned)b? branch : continue )
-| 11000 | 111 | x | x |   12 | BRANCH(BGEU)	  | ( (unsigned)a >= (unsigned)b? branch : continue )
-| 11100 | 000 | x | 0 |   13 | SYSTEM(ECALL)  | ECALL
-| 11100 | 000 | x | 1 |   14 | SYSTEM(EBREAK) | EBREAK
-| 00100 | 000 | x | x |   15 | OP-IMM (ADDI)  | a + b with I-immediate
-| 00100 | 001 | x | x |   16 | OP-IMM (SLLI)  | a << b with I-immediate
-| 00100 | 010 | x | x |   17 | OP-IMM (SLTI)  | ( a < b? 1: 0 ) with I-immediate
-| 00100 | 011 | x | x |   18 | OP-IMM (SLTIU  | ( (unsigned)a < (unsigned)b? 1: 0 ) with I-immediate
-| 00100 | 100 | x | x |   19 | OP-IMM (XORI)  | a ^ b with I-immediate
-| 00100 | 101 | 0 | x |   20 | OP-IMM (SRLI)  | a >> b with I-immediate
-| 00100 | 101 | 1 | x |   21 | OP-IMM (SRAI)  | a >>* b with I-immediate
-| 00100 | 110 | x | x |   22 | OP-IMM (ORI)	  | a | b with I-immediate
-| 00100 | 111 | x | x |   23 | OP-IMM (ANDI)  | a & b with I-immediate
-| 01100 | 000 | 0 | x |   24 | OP (ADD)		  | a + b
-| 01100 | 000 | 1 | x |   25 | OP (SUB)		  | a - b
-| 01100 | 001 | x | x |   26 | OP (SLL)		  | a << b
-| 01100 | 010 | x | x |   27 | OP (SLT)		  | ( a < b? 1: 0 )
-| 01100 | 011 | x | x |   28 | OP (SLTU)	  | ( (unsigned)a < (unsigned)b? 1: 0 )
-| 01100 | 100 | x | x |   29 | OP (XOR)		  | a ^ b
-| 01100 | 101 | 0 | x |   30 | OP (SRL)		  | a >> b
-| 01100 | 101 | 1 | x |   31 | OP (SRA)		  | a >>* b
-| 01100 | 110 | x | x |   32 | OP (OR)		  | a | b
-| 01100 | 111 | x | x |   33 | OP (AND)		  | a & b
-| 00010 | 000 | x | x |   34 | CUSTOM-0 (000) | Custom instruction (room for expansion) - R/I/S/B-type
-| 00010 | 001 | x | x |   35 | CUSTOM-0 (001) | Custom instruction (room for expansion) - R/I/S/B-type
-| 00010 | 010 | x | x |   36 | CUSTOM-0 (010) | Custom instruction (room for expansion) - R/I/S/B-type
-| 00010 | 011 | x | x |   37 | CUSTOM-0 (011) | Custom instruction (room for expansion) - R/I/S/B-type
-| 00010 | 100 | x | x |   38 | CUSTOM-0 (100) | Custom instruction (room for expansion) - R/I/S/B-type
-| 00010 | 101 | x | x |   39 | CUSTOM-0 (101) | Custom instruction (room for expansion) - R/I/S/B-type
-| 00010 | 110 | x | x |   40 | CUSTOM-0 (110) | Custom instruction (room for expansion) - R/I/S/B-type
-| 00010 | 111 | x | x |   41 | CUSTOM-0 (111) | Custom instruction (room for expansion) - R/I/S/B-type
-| 01010 | xxx | x | x |   42 | CUSTOM-1		  | Custom instruction (room for expansion) - U/J-type
-| 10110 | xxx | x | x |   43 | CUSTOM-2		  | Custom instruction (room for expansion) - U/J-type
-| 11110 | xxx | x | x |   44 | CUSTOM-3		  | Custom instruction (room for expansion) - U/J-type
+The following table shows a possible implementation of the Instruction Number that assumes all section are of the same KC size.
+In the following table an "IORDER" (Instruction Order in ROM) is obtained per instruction. In the real circuit, INUM = IORDER &times; KC.
+
+| opcode_6_2 | funct3 | funct7_5 | funct12_0 | IORDER | Instruction/opcode | Comments |
+|:----------:|:------:|:--------:|:---------:|-------:|:-------------------|:---------|
+|    00000   |   xxx  |     x    |     x     |     4  |   LOAD             | All loads are a single instruction from CU's point of view. Differences in size, alignment, or zero/sign-extension for bytes and halfs are handled by the memory interface block. Size is funct3(1:0), unsigned = funct3(2). I-type format. RBANK[rd] = MEM[RBANK[rs1] + sign-ext(I-imm)]. This part isn't implemented: "Loads with a destination of x0 must still raise any exceptions and cause any other side effects even though the load value is discarded". The EEI will define whether the memory system is little-endian or big-endian. In RISC-V, endianness is byte-address invariant.
+|    00001   |   xxx  |     x    |     x     |     -  |   LOAD-FP          | G Extension, not implemented
+|    00010   |   xxx  |     x    |     x     |    29  |   CUSTOM-0         | Custom instruction (room for expansion)
+|    00011   |   000  |     x    |     x     |     1  |   MISC-MEM(FENCE)  | Order device I/O and memory accesses as viewed by other RISCV harts and external devices or coprocessors. Implemented as NOP (No-OPeration)
+|    00100   |   000  |     x    |     x     |     6  |   OP-IMM (ADDI)    | Add Immediate. I-type format. RBANK[rd] = RBANK[rs1] + sign-ext(I-imm). ADDI rd, rs1, 0 is used to implement the MV rd, rs1 assembler pseudoinstruction. NOP is encoded as ADDI x0, x0, 0
+|    00100   |   001  |     x    |     x     |     7  |   OP-IMM (SLLI)    | Shift Left Logical Immediate. I-type format. RBANK[rd] = RBANK[rs1] << I-imm[4:0]
+|    00100   |   010  |     x    |     x     |     8  |   OP-IMM (SLTI)    | Set Less Than Immediate. I-type format. RBANK[rd] = ( RBANK[rs1] < sign-ext(I-imm) ? 1 : 0 )
+|    00100   |   011  |     x    |     x     |     9  |   OP-IMM (SLTIU    | Set Less Than Immediate Unsigned. I-type format. RBANK[rd] = ( (unsigned)RBANK[rs1] < (unsigned)sign-ext(I-imm) ? 1 : 0 ). Assembler pseudoinstruction SEQZ rd, rs is implemented ad SLTIU rd, rs1, 1
+|    00100   |   100  |     x    |     x     |    10  |   OP-IMM (XORI)    | Bitwise XOR with Immediate. I-type format. RBANK[rd] = RBANK[rs1] ^ sign-ext(I-imm). Assembler pseudoinstruction NOT rd, rs is implemented as XORI rd, rs1, -1 
+|    00100   |   101  |     0    |     x     |    11  |   OP-IMM (SRLI)    | Shift Right Logical Immediate. I-type format. RBANK[rd] = RBANK[rs1] >> I-imm[4:0]
+|    00100   |   101  |     1    |     x     |    12  |   OP-IMM (SRAI)    | Shift Right Arithmetic Immediate. I-type format. RBANK[rd] = RBANK[rs1] >>* I-imm[4:0]; >>* = arithmetic right shift
+|    00100   |   110  |     x    |     x     |    13  |   OP-IMM (ORI)     | Bitwise OR with Immediate. I-type format. RBANK[rd] = RBANK[rs1] | sign-ext(I-imm)
+|    00100   |   111  |     x    |     x     |    14  |   OP-IMM (ANDI)    | Bitwise AND with Immediate. I-type format. RBANK[rd] = RBANK[rs1] & sign-ext(I-imm)
+|    00101   |   xxx  |     x    |     x     |    15  |   AUIPC            | Add Upper Immediate to PC. U-type format. RBANK[rd] = PC + 20-bit U-immediate filled with 12 zeros in the lowest bits
+|    00110   |   xxx  |     x    |     x     |     -  |   OP-IMM-32        | RV64, not implemented
+|    00111   |   xxx  |     x    |     x     |     -  |   48b instr len    | Extension, not implemented
+|    01000   |   xxx  |     x    |     x     |     5  |   STORE            | All loads are a single instruction from CU's point of view. Differences in size, alignment, or zero/sign-extension for bytes and halfs are handled by the memory interface block. Size is funct3(1:0), unsigned = funct3(2) (same bits as from LOAD, unused for STORE). S-type format. MEM[RBANK[rs1] + sign-ext(I-imm)] = RBANK[rs2]. The EEI will define whether the memory system is little-endian or big-endian. In RISC-V, endianness is byte-address invariant.
+|    01001   |   xxx  |     x    |     x     |     -  |   STORE-FP         | G Extension, not implemented
+|    01010   |   xxx  |     x    |     x     |    36  |   CUSTOM-1         | Custom instruction (room for expansion)
+|    01011   |   xxx  |     x    |     x     |     -  |   AMO              | G Extension, not implemented
+|    01100   |   000  |     0    |     x     |    16  |   OP (ADD) 	       | Add. R-type format. RBANK[rd] = RBANK[rs1] + RBANK[rs2]. Overflow ignored
+|    01100   |   000  |     1    |     x     |    25  |   OP (SUB)	       | Subtraction. R-type format. RBANK[rd] = RBANK[rs1] + RBANK[rs2]. Overflow ignored
+|    01100   |   001  |     x    |     x     |    17  |   OP (SLL)	       | Shift Left Logical. R-type format. RBANK[rd] = RBANK[rs1] << RBANK[rs2][4:0]
+|    01100   |   010  |     x    |     x     |    18  |   OP (SLT)	       | Set Less Than. R-type format. RBANK[rd] = ( RBANK[rs1] < RBANK[rs2] ? 1 : 0 )
+|    01100   |   011  |     x    |     x     |    19  |   OP (SLTU)	       | Set Less Than Unsigned. R-type format. RBANK[rd] = ( (unsigned)RBANK[rs1] < (unsigned)RBANK[rs2] ? 1 : 0 ). Assembler pseudoinstruction SNEZ rd, rs is implemented ad SLTU rd, x0, rs2
+|    01100   |   100  |     x    |     x     |    20  |   OP (XOR)	       | Bitwise XOR. R-type format. RBANK[rd] = RBANK[rs1] ^ RBANK[rs2]
+|    01100   |   101  |     0    |     x     |    21  |   OP (SRL)	       | Shift Right Logical. R-type format. RBANK[rd] = RBANK[rs1] >> RBANK[rs2][4:0]
+|    01100   |   101  |     1    |     x     |    22  |   OP (SRA)	       | Shift Right Arithmetic. R-type format. RBANK[rd] = RBANK[rs1] >>* RBANK[rs2][4:0]; >>* = arithmetic right shift
+|    01100   |   110  |     x    |     x     |    23  |   OP (OR)	       | Bitwise OR. R-type format. RBANK[rd] = RBANK[rs1] | RBANK[rs2]
+|    01100   |   111  |     x    |     x     |    24  |   OP (AND)	       | Bitwise AND. R-type format. RBANK[rd] = RBANK[rs1] & RBANK[rs2]
+|    01101   |   xxx  |     x    |     x     |    26  |   LUI              | Load Upper Immediate. U-type format. RBANK[rd] = 20-bit U-immediate filled with 12 zeros in the lowest bits
+|    01110   |   xxx  |     x    |     x     |     -  |   OP-32            | RV64, not implemented
+|    01111   |   xxx  |     x    |     x     |     -  |   64b instr len    | Extension, not implemented
+|    10000   |   xxx  |     x    |     x     |     -  |   MADD             | G Extension, not implemented
+|    10001   |   xxx  |     x    |     x     |     -  |   MSUB             | G Extension, not implemented
+|    10010   |   xxx  |     x    |     x     |     -  |   NMSUB            | G Extension, not implemented
+|    10011   |   xxx  |     x    |     x     |     -  |   NMADD            | G Extension, not implemented
+|    10100   |   xxx  |     x    |     x     |     -  |   OP-FP            | G Extension, not implemented
+|    10101   |   xxx  |     x    |     x     |     -  |   Reserved         | 
+|    10110   |   xxx  |     x    |     x     |    37  |   CUSTOM-2         | Custom instruction (room for expansion) / Extension RV128
+|    10111   |   xxx  |     x    |     x     |     -  |   48b instr len    | Extension, not implemented
+|    11000   |   xxx  |     x    |     x     |    30  |   BRANCH(Bxx)      | B-type instruction format. All loads are a single instruction from CU's point of view. Differences on the branch condition are handled by the CalcTAKEJ block using funct3(1:0) to determine the kind of branch. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( RBANK[rs1] == RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11000   |   000  |     x    |     x     |    30  |   BRANCH(BEQ)      | Branch If Equal. B-type instruction format. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( RBANK[rs1] == RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11000   |   001  |     x    |     x     |    31  |   BRANCH(BNE)      | Branch if Not Equal. B-type instruction format. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( RBANK[rs1] != RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11000   |   100  |     x    |     x     |    32  |   BRANCH(BLT)      | Branch if Less Than. B-type instruction format. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( RBANK[rs1] < RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). BGT can be synthesized by reversing the operands to BLT. This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11000   |   101  |     x    |     x     |    33  |   BRANCH(BGE)      | Branch if Greater or Equal. B-type instruction format. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( RBANK[rs1] >= RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). BLE can be synthesized by reversing the operands to BGE. This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11000   |   110  |     x    |     x     |    34  |   BRANCH(BLTU)     | Branch if Less Than Unsigned. B-type instruction format. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( (unsigned)RBANK[rs1] < (unsigned)RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). BGTU can be synthesized by reversing the operands to BLTU. This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11000   |   111  |     x    |     x     |    35  |   BRANCH(BGEU)     | Branch if Greater or Equal Unsigned. B-type instruction format. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( (unsigned)RBANK[rs1] >= (unsigned)RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). BLEU can be synthesized by reversing the operands to BGEU. This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11001   |   xxx  |     x    |     x     |    28  |   JALR             | Jump And Link Register. I-type format. RBANK[rd] = PC' + 4, PC = PC' + sign-extension(I-imm) then setting the least-significant bit of the result to zero; PC' = PC of JALR instruction. This part is not implemented: "The JAL and JALR instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary"
+|    11010   |   xxx  |     x    |     x     |     -  |   Reserved         | 
+|    11011   |   xxx  |     x    |     x     |    27  |   JAL              | Jump And Link. J-type format. The J-immediate encodes a signed offset in multiples of 2 bytes. RBANK[rd] = PC' + 4, PC = PC' + sign-extension(J-imm); PC' = PC of JAL instruction. Plain unconditional jumps (assembler pseudoinstruction J) are encoded as a JAL with rd = x0. This part is not implemented: "The JAL and JALR instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary"
+|    11100   |   000  |     x    |     0     |     2  |   SYSTEM(ECALL)    | ECALL. I-type format. Make a service request to the execution environment, cause a precise requested trap to the supporting execution environment. Implemented as NOP (No-OPeration)
+|    11100   |   000  |     x    |     1     |     3  |   SYSTEM(EBREAK)   | EBREAK. I-type format. Return control to a debugging environment, cause a precise requested trap to the supporting execution environment. Implemented as NOP (No-OPeration)
+|    11101   |   xxx  |     x    |     x     |     -  |   Reserved         | 
+|    11110   |   xxx  |     x    |     x     |    38  |   CUSTOM-3         | Custom instruction (room for expansion) / Extension RV128
+|    11111   |   xxx  |     x    |     x     |     -  |   >=80b instr len  | Extension, not implemented
+
+The same table, this time containing implemented instructions only
+
+| opcode_6_2 | funct3 | funct7_5 | funct12_0 | IORDER | Instruction/opcode | Comments |
+|:----------:|:------:|:--------:|:---------:|-------:|:-------------------|:---------|
+|    00000   |   xxx  |     x    |     x     |     4  |   LOAD             | All loads are a single instruction from CU's point of view. Differences in size, alignment, or zero/sign-extension for bytes and halfs are handled by the memory interface block. Size is funct3(1:0), unsigned = funct3(2). I-type format. RBANK[rd] = MEM[RBANK[rs1] + sign-ext(I-imm)]. This part isn't implemented: "Loads with a destination of x0 must still raise any exceptions and cause any other side effects even though the load value is discarded". The EEI will define whether the memory system is little-endian or big-endian. In RISC-V, endianness is byte-address invariant.
+|    00011   |   000  |     x    |     x     |     1  |   MISC-MEM(FENCE)  | Order device I/O and memory accesses as viewed by other RISCV harts and external devices or coprocessors. Implemented as NOP (No-OPeration)
+|    00100   |   000  |     x    |     x     |     6  |   OP-IMM (ADDI)    | Add Immediate. I-type format. RBANK[rd] = RBANK[rs1] + sign-ext(I-imm). ADDI rd, rs1, 0 is used to implement the MV rd, rs1 assembler pseudoinstruction. NOP is encoded as ADDI x0, x0, 0
+|    00100   |   001  |     x    |     x     |     7  |   OP-IMM (SLLI)    | Shift Left Logical Immediate. I-type format. RBANK[rd] = RBANK[rs1] << I-imm[4:0]
+|    00100   |   010  |     x    |     x     |     8  |   OP-IMM (SLTI)    | Set Less Than Immediate. I-type format. RBANK[rd] = ( RBANK[rs1] < sign-ext(I-imm) ? 1 : 0 )
+|    00100   |   011  |     x    |     x     |     9  |   OP-IMM (SLTIU    | Set Less Than Immediate Unsigned. I-type format. RBANK[rd] = ( (unsigned)RBANK[rs1] < (unsigned)sign-ext(I-imm) ? 1 : 0 ). Assembler pseudoinstruction SEQZ rd, rs is implemented ad SLTIU rd, rs1, 1
+|    00100   |   100  |     x    |     x     |    10  |   OP-IMM (XORI)    | Bitwise XOR with Immediate. I-type format. RBANK[rd] = RBANK[rs1] ^ sign-ext(I-imm). Assembler pseudoinstruction NOT rd, rs is implemented as XORI rd, rs1, -1 
+|    00100   |   101  |     0    |     x     |    11  |   OP-IMM (SRLI)    | Shift Right Logical Immediate. I-type format. RBANK[rd] = RBANK[rs1] >> I-imm[4:0]
+|    00100   |   101  |     1    |     x     |    12  |   OP-IMM (SRAI)    | Shift Right Arithmetic Immediate. I-type format. RBANK[rd] = RBANK[rs1] >>* I-imm[4:0]; >>* = arithmetic right shift
+|    00100   |   110  |     x    |     x     |    13  |   OP-IMM (ORI)     | Bitwise OR with Immediate. I-type format. RBANK[rd] = RBANK[rs1] | sign-ext(I-imm)
+|    00100   |   111  |     x    |     x     |    14  |   OP-IMM (ANDI)    | Bitwise AND with Immediate. I-type format. RBANK[rd] = RBANK[rs1] & sign-ext(I-imm)
+|    00101   |   xxx  |     x    |     x     |    15  |   AUIPC            | Add Upper Immediate to PC. U-type format. RBANK[rd] = PC + 20-bit U-immediate filled with 12 zeros in the lowest bits
+|    01000   |   xxx  |     x    |     x     |     5  |   STORE            | All loads are a single instruction from CU's point of view. Differences in size, alignment, or zero/sign-extension for bytes and halfs are handled by the memory interface block. Size is funct3(1:0), unsigned = funct3(2) (same bits as from LOAD, unused for STORE). S-type format. MEM[RBANK[rs1] + sign-ext(I-imm)] = RBANK[rs2]. The EEI will define whether the memory system is little-endian or big-endian. In RISC-V, endianness is byte-address invariant.
+|    01100   |   000  |     0    |     x     |    16  |   OP (ADD) 	       | Add. R-type format. RBANK[rd] = RBANK[rs1] + RBANK[rs2]. Overflow ignored
+|    01100   |   000  |     1    |     x     |    25  |   OP (SUB)	       | Subtraction. R-type format. RBANK[rd] = RBANK[rs1] + RBANK[rs2]. Overflow ignored
+|    01100   |   001  |     x    |     x     |    17  |   OP (SLL)	       | Shift Left Logical. R-type format. RBANK[rd] = RBANK[rs1] << RBANK[rs2][4:0]
+|    01100   |   010  |     x    |     x     |    18  |   OP (SLT)	       | Set Less Than. R-type format. RBANK[rd] = ( RBANK[rs1] < RBANK[rs2] ? 1 : 0 )
+|    01100   |   011  |     x    |     x     |    19  |   OP (SLTU)	       | Set Less Than Unsigned. R-type format. RBANK[rd] = ( (unsigned)RBANK[rs1] < (unsigned)RBANK[rs2] ? 1 : 0 ). Assembler pseudoinstruction SNEZ rd, rs is implemented ad SLTU rd, x0, rs2
+|    01100   |   100  |     x    |     x     |    20  |   OP (XOR)	       | Bitwise XOR. R-type format. RBANK[rd] = RBANK[rs1] ^ RBANK[rs2]
+|    01100   |   101  |     0    |     x     |    21  |   OP (SRL)	       | Shift Right Logical. R-type format. RBANK[rd] = RBANK[rs1] >> RBANK[rs2][4:0]
+|    01100   |   101  |     1    |     x     |    22  |   OP (SRA)	       | Shift Right Arithmetic. R-type format. RBANK[rd] = RBANK[rs1] >>* RBANK[rs2][4:0]; >>* = arithmetic right shift
+|    01100   |   110  |     x    |     x     |    23  |   OP (OR)	       | Bitwise OR. R-type format. RBANK[rd] = RBANK[rs1] | RBANK[rs2]
+|    01100   |   111  |     x    |     x     |    24  |   OP (AND)	       | Bitwise AND. R-type format. RBANK[rd] = RBANK[rs1] & RBANK[rs2]
+|    01101   |   xxx  |     x    |     x     |    26  |   LUI              | Load Upper Immediate. U-type format. RBANK[rd] = 20-bit U-immediate filled with 12 zeros in the lowest bits
+|    11000   |   xxx  |     x    |     x     |    30  |   BRANCH(Bxx)      | B-type instruction format. All loads are a single instruction from CU's point of view. Differences on the branch condition are handled by the CalcTAKEJ block using funct3(1:0) to determine the kind of branch. The 12-bit B-immediate encodes signed offsets in multiples of 2 bytes. PC = ( RBANK[rs1] == RBANK[rs2] ? PC + sig-extension(B-immediate) : PC + 4 ). This part is not implemented: "The conditional branch instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary and the branch condition evaluates to true"
+|    11001   |   xxx  |     x    |     x     |    28  |   JALR             | Jump And Link Register. I-type format. RBANK[rd] = PC' + 4, PC = PC' + sign-extension(I-imm) then setting the least-significant bit of the result to zero; PC' = PC of JALR instruction. This part is not implemented: "The JAL and JALR instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary"
+|    11011   |   xxx  |     x    |     x     |    27  |   JAL              | Jump And Link. J-type format. The J-immediate encodes a signed offset in multiples of 2 bytes. RBANK[rd] = PC' + 4, PC = PC' + sign-extension(J-imm); PC' = PC of JAL instruction. Plain unconditional jumps (assembler pseudoinstruction J) are encoded as a JAL with rd = x0. This part is not implemented: "The JAL and JALR instructions will generate an instruction-address-misaligned exception if the target address is not aligned to a four-byte boundary"
+|    11100   |   000  |     x    |     0     |     2  |   SYSTEM(ECALL)    | ECALL. I-type format. Make a service request to the execution environment, cause a precise requested trap to the supporting execution environment. Implemented as NOP (No-OPeration)
+|    11100   |   000  |     x    |     1     |     3  |   SYSTEM(EBREAK)   | EBREAK. I-type format. Return control to a debugging environment, cause a precise requested trap to the supporting execution environment. Implemented as NOP (No-OPeration)
 
 
 ## Address Counter
@@ -85,7 +138,7 @@ A couple of MUXes are used to set uADDR to 0x00 (when one of the RST or EOI sign
    1. In the next clock cycle t+1: the ROM table outputs content from address k (first cycle after fetch phase of the current instruction); at the same time, address counter = k+1, ROM address = address_counter = k+1. Next value for address counter = k+2.
    1. ...
 
-8.5. ROM table
+### ROM table
 
 The ROM table contains the values for the control signals of the CPU datapath, the memory interface and the internal
 signals of the control unit itself.
@@ -93,59 +146,415 @@ One position of the ROM table corresponds to one clock cycle in the instruction 
 
 | bit positions     |    31   	|    30   	|    29   	|    28   	|    27   	|    26   	|    25   	|    24   	|
 |:-----------------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|
-| control signal    |   fetch   |  wrMEM  	|  rdMEM  	|  wADDR  	|  wWDAT 	| tWDATDQ 	|   wRDAT 	|  tRDATD1	|
+| control signal    |   fetch   |  wrMEM  	|  rdMEM  	|  wADDR  	|  wWDAT 	| tWDATDQ 	|   wRDAT 	|  tRDATD	|
 
 | bit positions     |    23   	|    22   	|  21 - 20  |    19   	|    18   	|    17   	|    16   	|
 |:-----------------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|
-| control signal    |  wTAKEJ 	|   XFV     |  selFLAG  |   iPC   	|   wPC   	|   tPCA  	|   tPCD1 	|
+| control signal    |  wTAKEJ 	|   isJUMP  |     -     |   iPC   	|   wPC   	|   tPCA  	|   tPCD 	|
 
 | bit positions     |    15   	|    14   	|    13   	|   12 - 9  |    8   	|
 |:-----------------:|:---------:|:---------:|:---------:|:---------:|:---------:|
-| control signal    |  wRBANK 	|  tRS1D1 	|  tRS2D2 	| selopALU	|    wALU 	|
+| control signal    |  wRBANK 	|  tRS1D 	|     - 	| selALUop	|    wALU 	|
 
 | bit positions     |    7   	|     6   	|     5   	|   4 - 2   |     1   	|     0   	|
 |:-----------------:|:---------:|:---------:|:---------:|:---------:|:---------:|:---------:|
-| control signal    |   tALUA 	|  tALUD1 	|   wIR   	|  selIMM 	|  tIMMD2 	|   EOI   	|
+| control signal    |   tALUA 	|  tALUD 	|   wIR   	|  selOp2 	|     - 	|   EOI   	|
+
+
+
+#### SelALUop
+
+| Selection (related instruction)                |  12 |  11 |  10 |  9  |
+|:----------------------------------------------:|:---:|:---:|:---:|:---:|
+| Operand2 (for LUI, PC+4 for JAL/JALR)          |  0  |  0  |  0  |  0  |
+| Addition (for ADD, ADDI, AUIPC, LOAD, STORE,   |  0  |  0  |  0  |  1  |
+|   and jump address targets in JAL, JALR, Bxx)  |     |     |     |     |
+| Subtraction (for SUB,                          |  0  |  0  |  1  |  0  |
+|   and comparisons in BEQ, BNE, BLT, BGE)       |     |     |     |     |
+| Bitwise AND (for AND, ANDI)                    |  0  |  0  |  1  |  1  |
+| Bitwise OR (for OR, ORI)                       |  0  |  1  |  0  |  0  |
+| Bitwise XOR (for XOR, XORI)                    |  0  |  1  |  0  |  1  |
+| Shift Left Logical (for SLL, SLLI)             |  0  |  1  |  1  |  0  |
+| Shift Right Logical (for SRL, SRLI)            |  0  |  1  |  1  |  1  |
+| Shift Right Arithmetic (for SRAI, SRA)         |  1  |  0  |  0  |  0  |
+| Set If Less Than (for SLT, SLTI)               |  1  |  0  |  0  |  1  |
+| Set If Less Than Unsigned (for SLTU, SLTIU)    |  1  |  0  |  1  |  0  |
+| Compare unsigned? (comparisons for BLTU, BGEU) |  1  |  0  |  1  |  1  |
+| Reserved                                       |  1  |  1  |  0  |  0  |
+| Reserved                                       |  1  |  1  |  0  |  1  |
+| Reserved                                       |  1  |  1  |  1  |  0  |
+| Reserved                                       |  1  |  1  |  1  |  1  |
+
+
+#### SelOp2
+| Selection              |  4  |  3  |  2  |  
+|:----------------------:|:---:|:---:|:---:|
+| RBANK[rs2]             |  0  |  0  |  0  |
+| I-immediate            |  0  |  0  |  1  |
+| S-immediate            |  0  |  1  |  0  |
+| U-immediate            |  0  |  1  |  1  |
+| B-immediate            |  1  |  0  |  0  |
+| J-immediate            |  1  |  0  |  1  |
+| size-related value     |  1  |  1  |  0  |
+| IADDR (PC+4)           |  1  |  1  |  1  |
+
+where the "size-related value" is a value 1, 2, 4, or 8, selected using the lowest 2 bits of the funct3 instrucion field.
+This results in 1 for bytes (funct3[2:0] = 00 binary), 2 for halfs (funct3[2:0] = 01 binary), 4 for words (funct3[2:0] = 10 binary), and 8 (unused in the current implementation, funct3[2:0] = 11 binary).
+The last entry, IADDR, must be PC+4, ie. after iPC has been used to update the register contents to PC+4; this IADDR value is used as-is to store it into the rd register in JAL and JALR instructions.
+
 
 
 If we assume the external memory requires 2 clock cycles and that ADDR, WDAT, and RDAT are transparent latches, the content of the ROM table follows: 
 
 ROM table contents (in binary)
 
-|                   |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|:-----------------:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:--:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:----:|:-:|:-:|:-:|:-:|:---:|:-:|:-:|---------|
-|  control signals  |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |   s  |   |   |   |   |     |   |   |         |
-|  control signals  |   |   |   |   |   | t |   | t |   |   |  s |   |   |   |   |   |   |   |   e  |   |   |   |   |     |   |   |         |
-|  control signals  |   |   |   |   |   | W |   | R | w |   |  e |   |   |   |   | w | t | t |   l  |   |   | t |   |  s  | t |   |         |
-|  control signals  | f | w | r | w | w | D | w | D | T |   |  l |   |   |   | t | R | R | R |   o  |   | t | A |   |  e  | I |   |         |
-|  control signals  | e | r | d | A | W | A | R | A | A |   |  F |   |   | t | P | B | S | S |   p  | w | A | L |   |  l  | M |   |         |
-|  control signals  | t | M | M | D | D | T | D | T | K | X |  L | i | w | P | C | A | 1 | 2 |   A  | A | L | U | w |  I  | M | E |         |
-|  control signals  | c | E | E | D | A | D | A | D | E | F |  A | P | P | C | D | N | D | D |   L  | L | U | D | I |  M  | D | O |         |
-|  control signals  | h | M | M | R | T | Q | T | 1 | J | V |  G | C | C | A | 1 | K | 1 | 2 |   U  | U | A | 1 | R |  M  | 2 | I | Comment |
-|      address      |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|                   |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|      (fetch)      |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|        0x00       | 1 | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | fecth, PC -> ADDR, RD (1st cycle) 
-|        0x01       | 1 | 0 | 1 | 0 | 0 | 0 | 1 | 1 | 0 | 0 | 00 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 1 | 000 | 0 | 0 | fecth, RD (2nd cycle), RDAT -> IR, end of fetch phase
-|        0x02       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
-|        0x03       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
-|                   |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|      (FENCE)      |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|        0x04       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | Do nothing (no-operation) and finish (EOI)
-|        0x05       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
-|        0x06       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
-|        0x07       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
-|                   |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|       (LOAD)      |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|        0x08       | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0000 | 0 | 1 | 0 | 0 | 000 | 1 | 0 | RBANK[rs1] + I-imm -> ADDR
-|        0x09       | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | RD (1st cycle) 
-|        0x0A       | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 1 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | RD (2nd cycle), WDAT -> RBANK[rd], and finish (EOI)
-|        0x0B       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
-|                   |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|      (STORE)      |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-|        0x0C       | 0 | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0000 | 0 | 1 | 0 | 0 | 000 | 1 | 0 | RBANK[rs1] + I-imm -> ADDR, RBANK[rs2] -> WDAT
-|        0x0D       | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | WR (1st cycle) 
-|        0x0E       | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | WR (2nd cycle) and finish (EOI) 
-|        0x0F       | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 00 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
-|                   |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
-| more entries ...  |   |   |   |   |   |   |   |   |   |   |    |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|:--------------------:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:----:|:-:|:-:|:-:|:-:|:---:|:-:|:-:|---------|
+|   control signals    |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   s  |   |   |   |   |     |   |   |         |
+|   control signals    |   |   |   |   |   | t |   |   |   |   |   |   |   |   |   |   |   |   |   e  |   |   |   |   |     |   |   |         |
+|   control signals    |   |   |   |   |   | W |   | t | w | i |   |   |   |   |   | w |   |   |   l  |   |   |   |   |  s  |   |   |         |
+|   control signals    | f | w | r | w | w | D | w | R | T | s |   |   |   |   |   | R | t |   |   o  |   | t | t |   |  e  |   |   |         |
+|   control signals    | e | r | d | A | W | A | R | D | A | J |   |   |   | t | t | B | R |   |   p  | w | A | A |   |  l  |   |   |         |
+|   control signals    | t | M | M | D | D | T | D | A | K | U |   | i | w | P | P | A | S |   |   A  | A | L | L | w |  O  |   | E |         |
+|   control signals    | c | E | E | D | A | D | A | T | E | M |   | P | P | C | C | N | 1 |   |   L  | L | U | U | I |  p  |   | O |         |
+|   control signals    | h | M | M | R | T | Q | T | D | J | P | - | C | C | A | D | K | D | - |   U  | U | A | D | R |  2  | - | I | Comment |
+|       address        |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|       (fetch)        |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x00         | 1 | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | fecth, PC -> ADDR, RD (1st cycle) 
+|         0x01         | 1 | 0 | 1 | 0 | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 1 | 000 | 0 | 0 | fecth, RD (2nd cycle), RDAT -> IR, end of fetch phase
+|         0x02         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x03         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (FENCE, IORDER = 1)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x04         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | Do nothing (no-operation) and finish (EOI)
+|         0x05         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x06         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x07         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (ECALL, IORDER = 2)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x08         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | Do nothing (no-operation) and finish (EOI)
+|         0x09         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x0A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x0B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (EBREAK, IORDER = 3) |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x0C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | Do nothing (no-operation) and finish (EOI)
+|         0x0D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x0E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x0F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (LOAD, IORDER = 4)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x10         | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0001 | 0 | 1 | 0 | 0 | 001 | 0 | 0 | RBANK[rs1] + I-imm -> ADDR
+|         0x11         | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | RD (1st cycle) 
+|         0x12         | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | RD (2nd cycle), WDAT -> RBANK[rd], and finish (EOI)
+|         0x13         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (STORE, IORDER = 5)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x14         | 0 | 0 | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0001 | 0 | 1 | 0 | 0 | 001 | 0 | 0 | RBANK[rs1] + I-imm -> ADDR, RBANK[rs2] -> WDAT
+|         0x15         | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | WR (1st cycle) 
+|         0x16         | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 1 | WR (2nd cycle) and finish (EOI) 
+|         0x17         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  more entries ...    |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (ADDI, IORDER = 6)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x18         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x19         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x1A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x1B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (SLLI, IORDER = 7)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x1C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x1D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x1E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x1F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (SLTI, IORDER = 8)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x20         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x21         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x22         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x23         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (SLTIU, IORDER = 9)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x24         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x25         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x26         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x27         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (XORI, IORDER = 10)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x28         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x29         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x2A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x2B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (SRLI, IORDER = 11)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x2C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x2D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x2E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x2F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (SRAI, IORDER = 12)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x30         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x31         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x32         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x33         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (ORI, IORDER = 13)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x34         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x35         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x36         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x37         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (ANDI, IORDER = 14)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x38         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x39         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x3A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x3B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (AUIPC, IORDER = 15) |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x3C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x3D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x3E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x3F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (ADD, IORDER = 16)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x40         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x41         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x42         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x43         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (SLL, IORDER = 17)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x44         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x45         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x46         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x47         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (SLT, IORDER = 18)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x48         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x49         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x4A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x4B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (SLTU, IORDER = 19)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x4C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x4D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x4E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x4F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (XOR, IORDER = 20)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x50         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x51         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x52         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x53         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (SRL, IORDER = 21)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x54         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x55         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x56         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x57         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (SRA, IORDER = 22)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x58         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x59         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x5A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x5B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (OR, IORDER = 23)   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x5C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x5D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x5E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x5F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (AND, IORDER = 24)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x60         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x61         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x62         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x63         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (SUB, IORDER = 25)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x64         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x65         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x66         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x67         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (LUI, IORDER = 26)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x68         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x69         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x6A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x6B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (JAL, IORDER = 27)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x6C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x6D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x6E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x6F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (JALR, IORDER = 28)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x70         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x71         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x72         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x73         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|(CUSTOM-0, IORDER =29)|   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x74         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x75         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x76         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x77         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (BEQ, IORDER = 30)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x78         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x79         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x7A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x7B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (BNE, IORDER = 31)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x7C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x7D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x7E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x7F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (BLT, IORDER = 32)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x80         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x81         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x82         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x83         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|  (BGE, IORDER = 33)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x84         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x85         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x86         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x87         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (BLTU, IORDER = 34)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x88         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x89         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x8A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x8B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+| (BGEU, IORDER = 35)  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x8C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x8D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x8E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x8F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|(CUSTOM-1, IORDER =36)|   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x90         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x91         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x92         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x93         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|(CUSTOM-2, IORDER =37)|   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x94         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x95         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x96         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x97         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|(CUSTOM-3, IORDER =38)|   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x98         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x99         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x9A         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x9B         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|                      |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|   (Unused entries)   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |      |   |   |   |   |     |   |   |         |
+|         0x9C         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x9D         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x9E         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0x9F         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA0         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA1         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA2         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA3         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA4         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA5         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA6         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA7         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA8         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xA9         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xAA         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xAB         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xAC         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xAD         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xAE         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xAF         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB0         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB1         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB2         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB3         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB4         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB5         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB6         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB7         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB8         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xB9         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xBA         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xBB         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xBC         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xBD         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xBE         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xBF         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC0         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC1         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC2         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC3         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC4         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC5         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC6         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC7         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC8         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xC9         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xCA         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xCB         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xCC         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xCD         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xCE         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xCF         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD0         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD1         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD2         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD3         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD4         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD5         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD6         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD7         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD8         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xD9         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xDA         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xDB         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xDC         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xDD         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xDE         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xDF         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE0         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE1         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE2         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE3         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE4         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE5         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE6         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE7         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE8         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xE9         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xEA         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xEB         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xEC         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xED         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xEE         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xEF         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF0         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF1         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF2         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF3         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF4         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF5         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF6         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF7         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF8         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xF9         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xFA         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xFB         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xFC         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xFD         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xFE         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry
+|         0xFF         | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0000 | 0 | 0 | 0 | 0 | 000 | 0 | 0 | Unused entry

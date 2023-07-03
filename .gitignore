@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+
+# Qt build directory
+build*/
+
+# Archives
+*.zip
+*.rar
+*.gz*
+*.tgz
+*.tar
+

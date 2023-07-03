@@ -12,21 +12,21 @@ The architecture of the system is Von-Neumann.
 The system contains a single memory block containing instructions and data starting at address zero.
 Peripherals are memory-mapped starting at address 0x80000000.
 The CPU main features:
-- It's multi-cycle, ie. the execution of each instruction requires multiple clock cycles,
-- It's a non-pipelined design, ie. the CPU doesn't execute an instruction until the previous one is finished,
-- Supports RV32I instructions only, without priviledge instructions, exceptions, traps, or interrupts,
-- Doesn't support unaligned memory accesses although all properly aligned byte, half, and word accesses are supported.
-- All edge-triggered writes are controlled by a WE (write enable) input connected to a control signal. The write operation is actually performed at the end of the clock cycle (falling-edge).
+* It's multi-cycle, ie. the execution of each instruction requires multiple clock cycles,
+* It's a non-pipelined design, ie. the CPU doesn't execute an instruction until the previous one is finished,
+* Supports RV32I instructions only, without priviledge instructions, exceptions, traps, or interrupts,
+* Doesn't support unaligned memory accesses although all properly aligned byte, half, and word accesses are supported.
+* All edge-triggered writes are controlled by a WE (write enable) input connected to a control signal. The write operation is actually performed at the end of the clock cycle (falling-edge).
 
 The timing of the different elements is as follows:
 
 1. Except for the operations explicitly listed here, the time required to perform an operation is almost zero, and any number of these operations performed one after the other also requires a negligible amount of time.
 1. For the operations explicitly listed here, the term "N clock cycle(s)" actually means _almost_ "N clock cycle(s)". This means that a single operation requiring "N clock cycles(s)" can be successfully combined in-series with any number of negligible-time operations in exactly N clock cycle(s). 
-   - Example: An ALU operation takes "1 clock cycle". This actually means that, in the same clock cycle, the CPU can
-      - a) Read operands and dump the values onto the internal data buses (zero time operations), 
-      - b) then perform the ALU operation (1 clock cycle), 
-      - c) followed by dumping the ALU result onto the internal address bus (zero time operation), and 
-      - d) writing this value into the ADDR register (zero time operation).
+   * Example: An ALU operation takes "1 clock cycle". This actually means that, in the same clock cycle, the CPU can
+      * a) Read operands and dump the values onto the internal data buses (zero time operations), 
+      * b) then perform the ALU operation (1 clock cycle), 
+      * c) followed by dumping the ALU result onto the internal address bus (zero time operation), and 
+      * d) writing this value into the ADDR register (zero time operation).
 1. Any operation performed by the ALU requires 1 clock cycle.
    1. During this clock cycle the ALU inputs (values dumped onto both internal data buses and the operation selection) must be stable.
    1. During the last part of the clock cycle the ALU puts the calculated value onto the result output.
@@ -38,17 +38,17 @@ The timing of the different elements is as follows:
 ![Overall system structure](doc/images/rv32i_mc_2db_cpu_pc.svg)
 
 The image above shows the overall system structure that contains:
-- A RISC-V RV32I CPU (bottom).
-- A memory address decoder (center). A very simple memory decoding is used.
-- A 64K x 32 memory containing instructions and data (right-center). The behavior of this memory block mimics a standard SRAM memory. Its contents are initialized with the executable in intel-hex format.
-- A 16K x 32 peripheral I/O area (right-top). The project currently doesn't include any peripherals.
+* A RISC-V RV32I CPU (bottom).
+* A memory address decoder (center). A very simple memory decoding is used.
+* A 64K x 32 memory containing instructions and data (right-center). The behavior of this memory block mimics a standard SRAM memory. Its contents are initialized with the executable in intel-hex format.
+* A 16K x 32 peripheral I/O area (right-top). The project currently doesn't include any peripherals.
 
 ### Memory map
 The system has a simple memory map:
-- 0x00000000 to 0x0003FFFF: Instruction + data memory (256KB total, 64K positions x 32-bit words memory block).
-- 0x00040000 to 0x7FFFFFFF: Unpopulated.
-- 0x80000000 to 0x80003FFF: Peripherals, 16KB total, 4K positions x 32-bit words  TBD.
-- 0x80004000 to 0xFFFFFFFF: Unpopulated.
+* 0x00000000 to 0x0003FFFF: Instruction + data memory (256KB total, 64K positions x 32-bit words memory block).
+* 0x00040000 to 0x7FFFFFFF: Unpopulated.
+* 0x80000000 to 0x80003FFF: Peripherals, 16KB total, 4K positions x 32-bit words  TBD.
+* 0x80004000 to 0xFFFFFFFF: Unpopulated.
 
 
 ## CPU structure
@@ -66,15 +66,16 @@ with the components:
 1. ALU. The CPU 32-bit Arithmetic-Logic Unit. From the operands in the data buses and the operation selection the ALU performs a calculation and determines the value of the Z, N, and C flags.
 1. ACC. The 32-bit Accumulator register. Holds the result of the ALU.
 1. IR. The 32-bit Instruction Register. Holds the instruction bits fetched from the external memory.
-1. Immediate block. A combinational block that extracts any of the immediate values present in the IR and puts its value onto the data bus D2.
+1. Immediate block. A combinational block that extracts any of the immediate values present in the IR.
+1. Op2 block. A MUX that selects among RBANK[rs2] and one of the possible immediate values to be the second operand of the ALU.
 1. The Control Unit (CU). This block generates all control signals to control the CPU datapath. It is composed of:
    1. The main control unit block, where the majority of control signals are generated.
    1. The memory interface. This is part of the Control Unit but exposed outside the CU block. A circuitry that generates external control signals for the memory transaction, and CPU-internal signals to support byte, half, and word aligned accesses.
    1. The TAKEJ block. This is part of the Control Unit but exposed outside the CU block. A circuitry that determines if, as the result of a comparison performed in the ALU (with its corresponding flags), a jump has to be taken or not. In the end this information is stored into the TAKEJ flag; this single-bit flag will allow or deny, in a future clock cycle, loading the PC with the calculated target address.
 
 The execution of any instruction is divided into two distinct phases, each one requiring several clock cycles:
-- The initial fetch phase. Common to all instruction, the goal of this phase is to fetch (read) the instruction bits from the external memory. This phase ends when the IR is written.
-- The second execution phase. This is different for each instruction, and its goal is to finish the execution of the instruction. This comprises one or more of these steps: operands retrieval, ALU calculation, memory operation, and result write. This phase ends when the CU-internal control signal EOI (End-Of-Instruction) is asserted in which case the next clock cycle is the first one of the fetch phase of the next instruction.
+* The initial fetch phase. Common to all instruction, the goal of this phase is to fetch (read) the instruction bits from the external memory. This phase ends when the IR is written.
+* The second execution phase. This is different for each instruction, and its goal is to finish the execution of the instruction. This comprises one or more of these steps: operands retrieval, ALU calculation, memory operation, and result write. This phase ends when the CU-internal control signal EOI (End-Of-Instruction) is asserted in which case the next clock cycle is the first one of the fetch phase of the next instruction.
 
 ### Program Counter (PC) structure
 
@@ -155,7 +156,7 @@ Control signals, in general, follow the nomenclature *op*ELEM or *op*FROMTO:
    - *rd* means reading from a storage element. Currently, applied only the external memory.
    - *i* means increment.  Currently, applied only the Program Counter (PC).
 - ELEM is the name of the element, eg. RBANK is the Register Bank, PC is the Program Counter
-- FROMTO is a composed name. FROM is always the name of the source element, TO is the name of the destination element or bus. For example, tRB1D1 is the tristate control signal that connects the output of the register bank read output 1 (RB1) and the data bus 1 (D1).
+- FROMTO is a composed name. FROM is always the name of the source element, TO is the name of the destination element or bus. For example, tRB1D is the tristate control signal that connects the output of the register bank read output 1 (RB1) and the data bus 1 (D).
 
 Apart from the signals for the external memory interface, the CPU receives only two signals:
 1. RST. High-level asynchronous reset input. This input is asserted high at the beginning of the simulation to initialize the internal elements of the CPU.
@@ -173,47 +174,40 @@ The complete list of control signals are:
    1. wWDAT. Write into the WDAT latch. This contains the value to be written into external memory.
    1. tWDATDQ. Dump (through a tristate gate) the WDAT latch onto the external DQ data bus.
    1. wRDAT. Write into the RDAT latch. This contains the value read from external memory.
-   1. tRDATD1. Dump (through a tristate gate) the RDAT latch onto the internal D1 data bus.
+   1. tRDATD. Dump (through a tristate gate) the RDAT latch onto the internal D data bus.
 1. PC-related control signals:
-   1. wTAKEJ. Write the TAKEJ ("take jump") flag. The TAKEJ flag determines if a jump must be taken and it is cleared at the fetch phase of every instruction. This is 1 for jump/call but may be 0 or 1 for brnaches, depending whether the selected flag (selFLAG) value equals the expected value (XFV) or not. For branch instructions the wTAKEJ control signal must be asserted in the clock cycle the ALU is performing the comparison (to use the flags that result from the comparison) and before the wPC signal is asserted; for unconditional jumps (selFLAG = 0) this signal may be asserted in any clock cycle prior to the assertion of wPC.
-   1. XFV (eXpected-Flag-Value). The value of the selected ALU flag (using selFLAG) used to determine whether the jump is taken or not must match the value of this control signal for the jump to be taken.
-   1. selFLAG (2 bits). Selects the ALU flag to compare against XFV to decide if the jump is taken or not. 
-      1. selFLAG = 0. No ALU flags used (unconditional jump).
-      1. selFLAG = 1. The Z ALU flag is used (conditional branch BEQ/BNE). Jump taken if Z == XFV.
-      1. selFLAG = 2. The N ALU flag is used (conditional branch BLT/BGE). Jump taken if N == XFV.
-      1. selFLAG = 3. The C ALU flag is used (conditional branch BLTU/BGEU). Jump taken if C == XFV.
+   1. wTAKEJ. Write the TAKEJ ("take jump") flag. The TAKEJ flag determines if a branch/jump must be taken and it is cleared at the fetch phase of every instruction. This is 1 for JAL/JALR but may be 0 or 1 for branches, depending whether the branch condition (extracted from funct3 instruction field) is met or not.  For branch instructions the wTAKEJ control signal must be asserted in the clock cycle the ALU is performing the comparison (to use the flags that result from the comparison) and before the wPC signal is asserted; for unconditional jumps (JAL/JALR) this signal must be asserted in combination with isJUMP, prior to asserting wPC.
+   1. isJUMP (is-JUMP instruction). Indicates the instruction is an unconditional jump (JAL, JALR).
    1. iPC (increment PC). Increment the PC value.
-   1. wPC (write PC). Write the jump target address into the PC register (only of the TAKEJ allows the operation).
+   1. wPC (write PC). Write the jump target address into the PC register (only if the TAKEJ allows the operation).
    1. tPCA. Dump (through a tristate gate) the PC register (the instruction address) onto the internal address data bus.
-   1. tPCD1. Dump (through a tristate gate) the PC register (the base address for PC-relative jumps) onto the internal D1 data bus.
+   1. tPCD. Dump (through a tristate gate) the PC register (the base address for PC-relative jumps) onto the internal D data bus.
 1. RegisterBank-related control signals:
-   1. wRBANK. Write the value of the internal D1 data bus into the rd register of the register bank.
-   1. tRS1D1. Dump (through a tristate gate) the value of the rs1 register of the register bank onto the internal D1 data bus.
-   1. tRS2D2. Dump (through a tristate gate) the value of the rs2 register of the register bank onto the internal D2 data bus.
-1. ALU-related control signals:
-   1. selopALU (4 bits). Selection of the operation to be performed by the ALU. See the ALU section for details.
+   1. wRBANK. Write the value of the internal D data bus into the rd register of the register bank.
+   1. tRS1D. Dump (through a tristate gate) the value of the rs1 register of the register bank onto the internal D data bus.
+   ALU-related control signals:
+   1. selALUop (4 bits). Selection of the operation to be performed by the ALU. See the ALU section for details.
    1. wALU. Write the ALU result into the ACC (accumulator) register and also update the stored ALU flags.
    1. tALUA. Dump (through a tristate gate) the value of the ALU result (before the ACC register) onto the internal A address bus.
-   1. tALUD1. Dump (through a tristate gate) the value of the ACC register onto the internal D1 data bus.
+   1. tALUD. Dump (through a tristate gate) the value of the ACC register onto the internal D data bus.
 1. IR-related control signals:
    1. wIR. Write the instruction bits into the Instruction Register (IR).
-   1. selIMM (3 bits). Selection of the immediate value from the I, S, U, B, and J immediates coming from the different instructions format.
-   1. tIMMD2. Dump (through a tristate gate) the value of the selected immediate value onto the internal D2 data bus.
-1. Control signals internal to the Control Unit:
+   1. selOp2 (3 bits). Selection of the immediate value from the I, S, U, B, and J immediates coming from the different instructions format.
+   Control signals internal to the Control Unit:
    1. EOI (End-Of-Instruction). This control signal is internal to the Control Unit. It signals the last clock cycle of the execution of the current instruction.
 
   
 ### CPU design decisions
 Several questionable design decisions have been made, some of them to add clarity to the design, some others simply to add a variety of elements in the design (which is important so the user/student can analyze different kinds of elements), simplify the overall block diagram or educational purposes:
-- Two data buses internal to the CPU have been used, one for each operand inputs of the ALU, called "internal data bus 1" (D1) and "internal data bus 2" (D2).
-- A MUX + tristate have been used to dump the immediate value (I, S, U, B, or J) to D2 and a separate tristate (with a separate control signal) to dump the value of the second read port of the register bank (RB2) to the same D2 bus. The first MUX has 5 entries (3 selection bits), so integrating RB2 as a 6th one would reduce the number of control signals (the tRB2D2 control signal).
-- Four separate tristate gates (with their corresponding control signals) have been used to dump the value of PC, RB1, RDAT, and ALU onto the D1 data bus. Using a 4-to-1 MUX would require only two selection bits, eliminating 2 control signals.
-- Two separate tristate gates (with their corresponding control signals) have been used to dump the value of PC and ALU onto the internal address bus. Using a 2-to-1 MUX would require only one selection bit, eliminating 1 control signal.
+- An internal address bus using tristate gates have been used. The ADDR input may come from the PC or the ALU output. A 2-input MUX could replace this bus.
+- An internal data bus using tristate gates have been used as the "main" data transfer element. Possible sources are PC, RBANK[rs1], ALU output, and RDAT; possible destinations are PC, RBANK[rd], and ALU 1st operand. A 4-input MUX could replace this bus.
+- A large 8-input MUX have been used to select among RBANK[rs2], I-immediate, S-immediate, U-immediate, B-immediate, J-immediate, 0x00000000, and a value based on the 2-bit LSBs of funct3 instruction field (0x00000001 for bytes, 0x00000002 for halfs, 0x00000004 for words, 0x00000001 for funct3[2:0] = 11 binary). In this case the MUX is used to reduce the number of control signals that would be required if using a tristate gate for each of these possible sources.
 - The storage elements that connect the CPU with the external memory are built using transparent latches, all the other storage elements of the CPU are edge-triggered registers. Although this reduces the number of clock cycles required to perform some operations, the rationale behind this decision is just to add variety to the CPU internal storage elements.
 - The PC register exhibits two outputs: instruction address and base. The instruction address output is the memory address used for the fetch phase to retrieve the instruction bits and the base output is the value used for PC-relative address calculations in the ALU. The address of the current instruction is the instruction address at the beginning of the execution until the PC is incremented, then it moves to the base output; ie. the instruction address is the address of the current instruction up to the clock cycle the iPC control signal is asserted and the address of the immediately following instruction after that; on the other hand the base output is the address of the previous executed instruction before and up iPC and the address of the current one after that point. The rationale behind this is to assert iPC blindly during the fetch phase for all instructions, even jump/branch instructions that use PC-relative (relative to the PC of the jump/branch instruction itself) calculations to determine the target instruction address.
-- The external memory interface uses a 32-bit bidirectional DQ data bus, a 30-bit ADDR bus plus 4-bit BE (byte enables) to indicate word address and bytes inside the word that are related to the memory operation, and separate RD and WR signals. Taking into account the presence
-of the BE signals (that are 0 when no memory operation is ongoing), a single WR signal would suffice to signal a write operation (WR = 1) or a read one (WR = 0); this was finally discarded to improve the clarity of the memory interface.
-- The execution of conditional branches could be reduced if the branch is not taken, simply by connecting the output value (inverted) of the CalcTAKEJ component as a third input to the 2-input OR logic gate in the Control Unit component that controls the MUX that provides uADDR to the ROM table. The effect of this connection would be that, if the calculated Take Jump bit = 0, its inverted value would force uADDR = 0 and that would abort the branch execution, starting the execution of instruction immediately following the branch in the next clock cycle. Another effect of this connection is that branch instructions would have two different execution times: a shorter one if the branch condition doesn't hold and the jump is not taken, and a larger one if the branch condition holds and the jump is taken. Even if this means the design becomes more efficient in terms of clock cycles, this "variable" execution time was considered an obstacle for the student understaning and so was discarded. 
+- The external memory interface uses a 32-bit bidirectional DQ data bus, a 30-bit ADDR bus plus 4-bit BE (byte enables) to indicate word address and bytes inside the word that are related to the memory operation, and separate RD and WR signals. Taking into account the presence of the BE signals (that are 0 when no memory operation is ongoing), a single WR signal would suffice to signal a write operation (WR = 1) or a read one (WR = 0); this was finally discarded to improve the clarity of the memory interface.
+
+TO DISCUSS:
+- The execution time of conditional branches could be reduced if the branch is not taken, simply by connecting the output value (inverted) of the CalcTAKEJ component as a third input to the 2-input OR logic gate in the Control Unit component that controls the MUX that provides uADDR to the ROM table. The effect of this connection would be that, if the calculated Take Jump bit = 0, its inverted value would force uADDR = 0 and that would abort the branch execution, starting the execution of instruction immediately following the branch in the next clock cycle. Another effect of this connection is that branch instructions would have two different execution times: a shorter one if the branch condition doesn't hold and the jump is not taken, and a larger one if the branch condition holds and the jump is taken. Even if this means the design becomes more efficient in terms of clock cycles, this "variable" execution time was considered an obstacle for the student understaning and so was discarded. 
 
 
 # Software development

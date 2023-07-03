@@ -7,6 +7,7 @@ List of to-do tasks to complete the project.
 - SVG images:
   - [ ] System block diagram.
   - [ ] Immediate block diagrama.
+  - [ ] Update Control Unit circuitry, bits and symbol to reflect changes (replace XFV with isJUMP, rename selIMM as selOp2, eliminate selFLAG, ...)
 - SystemC:
 - Qt GUI:
 - Documentation:
@@ -30,10 +31,12 @@ List of to-do tasks to complete the project.
   - [x] Logic gates, MUXes, registers, etc. filled in white to be consistent.
   - [x] Rename external address bus to ADDR so it can be distinguished from the internal address bus A.
   - [x] PC block with instr_addr and base outputs.
-  - [x] CPU block using the PC block with instr_addr (to internal address bus) and base (to internal D1 bus) outputs.
+  - [x] CPU block using the PC block with instr_addr (to internal address bus) and base (to internal D bus) outputs.
+  - [x] Update storage elements to reflect ADDR, WDAT, and RDAT are transparent latches.
 - SystemC:
 - Qt GUI:
 - Documentation:
   - [x] Rename external address bus to ADDR so it can be distinguished from the internal address bus A.
   - [x] PC block with instr_addr and base outputs.
 - Other:
+  - [x] Use funct3 for branches to decide the flags used to determine if the branch is taken, so all branches are treated as a single "instruction" in the control unit (much like loads and stores)
